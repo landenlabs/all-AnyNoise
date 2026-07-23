@@ -34,3 +34,9 @@ google-services.json
 
 # Android Profiling
 *.hprof
+
+# Node dependencies
+node_modules/
+
+# Environment variables / secrets
+.env
