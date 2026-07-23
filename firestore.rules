@@ -1,0 +1,40 @@
+rules_version = '2';
+
+// NOTE: this app has no login/auth system (by design, per the project scope),
+// so these rules can only do basic shape validation, not "does this request
+// really come from the device it claims to be." Anyone with the Firebase web
+// API key (which ships inside every Android APK) can technically write here.
+// If you need real per-device write isolation, add Firebase Anonymous Auth
+// and require request.auth.uid == deviceId on the devices/{deviceId} match.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // One doc per installed app instance: FCM token + per-listener opt-outs.
+    match /devices/{deviceId} {
+      allow read: if true;
+      allow create, update: if request.resource.data.keys().hasAll(
+        ['fcmToken', 'displayName', 'mutedListenerIds', 'updatedAt']
+      );
+      allow delete: if false;
+    }
+
+    // One doc per registered "sound source" (a device acting as a listener).
+    match /listeners/{listenerId} {
+      allow read: if true;
+      allow create, update: if request.resource.data.keys().hasAll(
+        ['name', 'ownerDeviceId', 'active', 'thresholdAmplitude', 'minDurationMs']
+      );
+      allow delete: if false;
+    }
+
+    // Append-only log of detected noise episodes; the Cloud Function reads
+    // these via onDocumentCreated and clients should never edit/delete them.
+    match /noiseEvents/{eventId} {
+      allow read: if true;
+      allow create: if request.resource.data.keys().hasAll(
+        ['listenerId', 'listenerName', 'durationSec']
+      );
+      allow update, delete: if false;
+    }
+  }
+}

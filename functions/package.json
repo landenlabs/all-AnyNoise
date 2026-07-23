@@ -1,0 +1,16 @@
+{
+  "name": "anynoise-functions",
+  "description": "Fans out FCM notifications and logs to a Google Sheet when AnyNoise detects a noise event.",
+  "engines": {
+    "node": "20"
+  },
+  "main": "index.js",
+  "scripts": {
+    "lint": "node -c index.js"
+  },
+  "dependencies": {
+    "firebase-admin": "^12.3.1",
+    "firebase-functions": "^5.1.1"
+  },
+  "private": true
+}

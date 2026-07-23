@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="anynoise_primary">#3D5AFE</color>
+    <color name="anynoise_primary_dark">#0031CA</color>
+    <color name="anynoise_accent">#FF6E40</color>
+    <color name="anynoise_background">#FAFAFA</color>
+    <color name="anynoise_surface">#FFFFFF</color>
+    <color name="anynoise_on_primary">#FFFFFF</color>
+</resources>

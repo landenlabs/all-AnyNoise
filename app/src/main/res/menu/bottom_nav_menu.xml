@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/nav_listen"
+        android:icon="@drawable/ic_mic"
+        android:title="@string/nav_listen" />
+    <item
+        android:id="@+id/nav_subscriptions"
+        android:icon="@drawable/ic_notifications"
+        android:title="@string/nav_notifications" />
+    <item
+        android:id="@+id/nav_users"
+        android:icon="@drawable/ic_people"
+        android:title="@string/nav_users" />
+    <item
+        android:id="@+id/nav_history"
+        android:icon="@drawable/ic_history"
+        android:title="@string/nav_history" />
+</menu>

@@ -1,0 +1,13 @@
+rules_version = '2';
+
+// Same caveat as firestore.rules: no auth system, so this only validates
+// shape/size, not caller identity. See firestore.rules for the auth note.
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /noiseClips/{deviceId}/{fileName} {
+      allow read: if true;
+      allow write: if request.resource.size < 10 * 1024 * 1024
+                   && request.resource.contentType.matches('audio/.*');
+    }
+  }
+}

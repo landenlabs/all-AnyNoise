@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">All-AnyNoise</string>
+
+    <string name="nav_listen">Listen</string>
+    <string name="nav_notifications">Sounds</string>
+    <string name="nav_users">Users</string>
+    <string name="nav_history">History</string>
+
+    <string name="listen_name_label">Name this sound source</string>
+    <string name="listen_name_hint">e.g. Nursery, Front Door</string>
+    <string name="listen_sensitivity_label">Sensitivity</string>
+    <string name="listen_min_duration_label">Audio min (sec)</string>
+    <string name="listen_clip_length_label">Record (sec)</string>
+    <string name="listen_record_clip">Attach an audio clip to the notification</string>
+    <string name="listen_start">Start Listening</string>
+    <string name="listen_stop">Stop Listening</string>
+    <string name="listen_status_idle">Not listening</string>
+    <string name="listen_status_active">Listening… last triggered: %1$s</string>
+    <string name="listen_status_never_triggered">Listening… no noise detected yet</string>
+    <string name="listen_test_notification_button">Send Test Notification</string>
+    <string name="listen_test_notification_disabled">Notifications are disabled for AnyNoise in system settings; sending anyway.</string>
+    <string name="listen_test_notification_listener_name">Test Notification</string>
+    <string name="listen_test_notification_sent">Test event sent — check for a push notification and a new Sheet row.</string>
+    <string name="listen_test_notification_failed">Failed to send test event: %1$s</string>
+    <string name="listen_last_event_label">Last sound recorded</string>
+    <string name="listen_last_event_none">No sound recorded yet.</string>
+    <string name="listen_last_event_value">%1$s · %2$.1fs</string>
+
+    <string name="subscriptions_title">Available sound sources</string>
+    <string name="subscriptions_empty">No active listeners yet. Ask someone to start listening from the Listen tab.</string>
+    <string name="subscriptions_notify_switch">Notify me</string>
+
+    <string name="users_title">Registered users</string>
+    <string name="users_empty">No devices have registered yet.</string>
+    <string name="users_last_seen">Last seen %1$s</string>
+
+    <string name="history_title">Activity history</string>
+    <string name="history_row_count">%1$d noise events logged</string>
+    <string name="history_no_events">No noise events recorded yet.</string>
+    <string name="history_last_row">Last: %1$s · %2$.1fs · %3$s</string>
+    <string name="history_webview_error">Couldn\'t load the full sheet (it may not be shared as "Anyone with the link can view"). Showing the summary above instead.</string>
+
+    <string name="notification_channel_listening_name">Listening service</string>
+    <string name="notification_channel_listening_desc">Shown while AnyNoise is actively listening for sound</string>
+    <string name="notification_channel_alerts_name">Noise alerts</string>
+    <string name="notification_channel_alerts_desc">Notifications when a registered sound source detects sustained noise</string>
+    <string name="notification_listening_title">AnyNoise is listening</string>
+    <string name="notification_listening_text">Monitoring for sustained sound on “%1$s”</string>
+
+    <string name="battery_optimization_title">Allow AnyNoise to run in the background</string>
+    <string name="battery_optimization_message">To keep listening reliably while charging, AnyNoise needs to be exempted from battery optimization.</string>
+    <string name="battery_optimization_action">Allow</string>
+
+    <string name="action_settings">Settings</string>
+    <string name="settings_title">Settings</string>
+    <string name="settings_dark_theme">Dark theme</string>
+</resources>

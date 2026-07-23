@@ -1,0 +1,14 @@
+  To check the current Private DNS mode:                                                                                                                                                                   
+                                                                                                                                                                                                               
+      adb shell settings get global private_dns_mode                                                                                                                                                           
+                                                                                                                                                                                                               
+      (You can also check private_dns_specifier to see the configured hostname, e.g. dns.adguard.com:)                                                                                                         
+                                                                                                                                                                                                               
+      adb shell settings get global private_dns_specifier                                                                                                                                                      
+                                                                                                                                                                                                               
+      To disable Private DNS:                                                                                                                                                                                  
+                                                                                                                                                                                                               
+      adb shell settings put global private_dns_mode off                                                                                                                                                       
+                                                                                                                                                                                                               
+      For reference, the other possible values for private_dns_mode are opportunistic (auto, falls back to plaintext DNS if the private server isn't reachable) and hostname (strict mode, requires the        
+                                       

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.AnyNoise" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/anynoise_primary</item>
+        <item name="colorPrimaryDark">@color/anynoise_primary_dark</item>
+        <item name="colorOnPrimary">@color/anynoise_on_primary</item>
+        <item name="colorAccent">@color/anynoise_accent</item>
+        <item name="android:windowBackground">@color/anynoise_background</item>
+    </style>
+
+    <style name="BottomNavLabel.Active" parent="TextAppearance.MaterialComponents.Caption">
+        <item name="android:textSize">16sp</item>
+    </style>
+
+    <style name="BottomNavLabel.Inactive" parent="TextAppearance.MaterialComponents.Caption">
+        <item name="android:textSize">16sp</item>
+    </style>
+</resources>
