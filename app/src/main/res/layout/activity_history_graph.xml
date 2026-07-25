@@ -10,23 +10,23 @@
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
         android:background="?attr/colorPrimary"
-        app:title="@string/app_name"
+        android:theme="@style/ThemeOverlay.MaterialComponents.Dark.ActionBar"
+        app:title="@string/history_graph_title"
         app:titleTextColor="?attr/colorOnPrimary" />
 
-    <FrameLayout
-        android:id="@+id/fragment_container"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1" />
-
-    <com.google.android.material.bottomnavigation.BottomNavigationView
-        android:id="@+id/bottom_nav"
+    <TextView
+        android:id="@+id/tv_graph_error"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        app:itemTextAppearanceActive="@style/BottomNavLabel.Active"
-        app:itemTextAppearanceInactive="@style/BottomNavLabel.Inactive"
-        app:itemIconTint="@color/bottom_nav_item_color"
-        app:itemTextColor="@color/bottom_nav_item_color"
-        app:menu="@menu/bottom_nav_menu" />
+        android:padding="24dp"
+        android:textColor="?android:attr/textColorSecondary"
+        android:visibility="gone" />
+
+    <com.github.mikephil.charting.charts.LineChart
+        android:id="@+id/chart_history"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:layout_margin="8dp" />
 
 </LinearLayout>

@@ -6,4 +6,13 @@
     <color name="anynoise_background">#FAFAFA</color>
     <color name="anynoise_surface">#FFFFFF</color>
     <color name="anynoise_on_primary">#FFFFFF</color>
+
+    <color name="anynoise_history_header_bg">#F1F3F4</color>
+    <color name="anynoise_history_row_alt">#F8F9FA</color>
+    <color name="anynoise_history_divider">#E0E0E0</color>
+
+    <color name="anynoise_link">#3D5AFE</color>
+
+    <color name="anynoise_status_ok">#2E7D32</color>
+    <color name="anynoise_status_bad">#C62828</color>
 </resources>

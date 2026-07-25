@@ -35,12 +35,22 @@ in this same Sheet — a no-code way to check who's registered.
 7. In the Apps Script editor, click the gear icon (**Project Settings**) →
    check **"Show appsscript.json manifest file"**.
 8. Open `appsscript.json` and add the Firestore OAuth scope to `oauthScopes`
-   (create the array if it isn't there):
+   (create the array if it isn't there). `script.external_request` is also
+   required once this array is explicit — Apps Script otherwise auto-detects
+   scopes from your code, but an explicit `oauthScopes` list disables that,
+   so `UrlFetchApp.fetch()` (used to call the Firestore REST API) needs its
+   own scope listed or you'll hit "Specified permissions are not sufficient
+   to call UrlFetchApp.fetch". Use `datastore`, not `datastore.readonly` —
+   the Firestore REST API only recognizes the read/write scope; a
+   `datastore.readonly` scope is silently accepted at consent time but
+   produces a token with no real access, causing a 403 "insufficient
+   authentication scopes" error when calling `firestore.googleapis.com`:
    ```json
    "oauthScopes": [
      "https://www.googleapis.com/auth/spreadsheets.currentonly",
      "https://www.googleapis.com/auth/script.container.ui",
-     "https://www.googleapis.com/auth/datastore.readonly"
+     "https://www.googleapis.com/auth/datastore",
+     "https://www.googleapis.com/auth/script.external_request"
    ]
    ```
 9. Save, reload the Sheet (close and reopen it), and re-authorize when

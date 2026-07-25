@@ -21,6 +21,33 @@ function doPost(e) {
 }
 
 /**
+ * Custom spreadsheet function: converts a UTC ISO 8601 timestamp string to
+ * New York local time for display, correctly handling the EST/EDT switch.
+ * Leaves the source data untouched — use this on a separate "local time" tab.
+ *
+ * Usage (single cell):  =TO_LOCAL_TIME(Sheet1!A2)
+ * Usage (whole column):  =ARRAYFORMULA(TO_LOCAL_TIME(Sheet1!A2:A))
+ */
+function TO_LOCAL_TIME(input, tz) {
+  tz = tz || 'America/New_York';
+  if (Array.isArray(input)) {
+    return input.map(function (row) {
+      return row.map(function (cell) {
+        return formatLocalTime_(cell, tz);
+      });
+    });
+  }
+  return formatLocalTime_(input, tz);
+}
+
+function formatLocalTime_(value, tz) {
+  if (!value) return '';
+  var date = new Date(value);
+  if (isNaN(date.getTime())) return value;
+  return Utilities.formatDate(date, tz, 'yyyy-MM-dd hh:mm:ss a zzz');
+}
+
+/**
  * Adds a "AnyNoise" menu with a button to refresh a "Devices" sheet tab
  * from the `devices` Firestore collection. Requires the "Firestore" scope
  * in this project's appsscript.json manifest (see SETUP.md step 7) — Apps

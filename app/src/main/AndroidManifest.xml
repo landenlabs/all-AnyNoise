@@ -36,6 +36,17 @@
             android:exported="false"
             android:parentActivityName=".MainActivity" />
 
+        <activity
+            android:name=".history.SheetViewActivity"
+            android:exported="false"
+            android:parentActivityName=".SettingsActivity" />
+
+        <activity
+            android:name=".history.HistoryGraphActivity"
+            android:exported="false"
+            android:screenOrientation="landscape"
+            android:parentActivityName=".MainActivity" />
+
         <service
             android:name=".listen.NoiseListenerService"
             android:enabled="true"

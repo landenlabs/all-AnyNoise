@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical">
@@ -10,6 +11,7 @@
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
         android:background="?attr/colorPrimary"
+        android:theme="@style/ThemeOverlay.MaterialComponents.Dark.ActionBar"
         app:title="@string/settings_title"
         app:titleTextColor="?attr/colorOnPrimary" />
 
@@ -33,5 +35,75 @@
             android:layout_height="wrap_content" />
 
     </LinearLayout>
+
+    <Button
+        android:id="@+id/button_view_sheet"
+        style="@style/Widget.MaterialComponents.Button.TextButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:textColor="@color/anynoise_link"
+        android:text="@string/settings_view_sheet" />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginTop="8dp"
+        android:background="@color/anynoise_history_divider" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingStart="24dp"
+        android:paddingEnd="8dp"
+        android:paddingTop="16dp">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:textStyle="bold"
+            android:textSize="16sp"
+            android:text="@string/network_status_title" />
+
+        <Button
+            android:id="@+id/button_retest_network"
+            style="@style/Widget.MaterialComponents.Button.TextButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@color/anynoise_link"
+            android:text="@string/network_status_retest" />
+
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/tv_network_type"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="24dp"
+        android:layout_marginEnd="24dp"
+        android:layout_marginTop="4dp"
+        tools:text="Connection: Wi-Fi" />
+
+    <TextView
+        android:id="@+id/tv_network_ipv6_address"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="24dp"
+        android:layout_marginEnd="24dp"
+        android:layout_marginTop="4dp"
+        tools:text="Device IPv6 address: 2601:1234::abcd" />
+
+    <TextView
+        android:id="@+id/tv_network_ipv6_status"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="24dp"
+        android:layout_marginEnd="24dp"
+        android:layout_marginTop="4dp"
+        android:layout_marginBottom="16dp"
+        tools:text="IPv6 internet: checking…" />
 
 </LinearLayout>

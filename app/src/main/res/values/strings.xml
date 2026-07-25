@@ -39,6 +39,19 @@
     <string name="history_row_count">%1$d noise events logged</string>
     <string name="history_no_events">No noise events recorded yet.</string>
     <string name="history_last_row">Last: %1$s · %2$.1fs · %3$s</string>
+    <string name="history_load_error">Couldn\'t load the sheet (it may not be shared as "Anyone with the link can view").</string>
+    <string name="history_col_time">Time</string>
+    <string name="history_col_listener">Listener</string>
+    <string name="history_col_duration">Duration (s)</string>
+    <string name="history_col_audio">Audio URL</string>
+    <string name="history_col_type">Sound Type</string>
+    <string name="history_view_graph">View graph</string>
+    <string name="history_graph_title">Activity graph</string>
+    <string name="history_graph_load_error">Couldn\'t load the sheet (it may not be shared as "Anyone with the link can view").</string>
+    <string name="history_graph_empty">No noise events recorded yet.</string>
+
+    <string name="sheet_view_title">Activity Sheet</string>
+    <string name="settings_view_sheet">View activity sheet</string>
     <string name="history_webview_error">Couldn\'t load the full sheet (it may not be shared as "Anyone with the link can view"). Showing the summary above instead.</string>
 
     <string name="notification_channel_listening_name">Listening service</string>
@@ -55,4 +68,18 @@
     <string name="action_settings">Settings</string>
     <string name="settings_title">Settings</string>
     <string name="settings_dark_theme">Dark theme</string>
+
+    <string name="network_status_title">Network status</string>
+    <string name="network_status_connection">Connection: %1$s</string>
+    <string name="network_status_type_wifi">Wi-Fi</string>
+    <string name="network_status_type_cellular">Cellular</string>
+    <string name="network_status_type_ethernet">Ethernet</string>
+    <string name="network_status_type_other">Other</string>
+    <string name="network_status_type_none">No network</string>
+    <string name="network_status_ipv6_address">Device IPv6 address: %1$s</string>
+    <string name="network_status_ipv6_address_none">Device IPv6 address: none detected</string>
+    <string name="network_status_ipv6_checking">IPv6 internet: checking…</string>
+    <string name="network_status_ipv6_reachable">IPv6 internet: reachable (%1$d ms) — history should load quickly</string>
+    <string name="network_status_ipv6_unreachable">IPv6 internet: unreachable — history may load slowly or fail</string>
+    <string name="network_status_retest">Retest</string>
 </resources>
