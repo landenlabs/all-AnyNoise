@@ -4,8 +4,10 @@ import android.content.Context;
 import android.os.Build;
 import android.util.Log;
 
+import com.google.android.gms.tasks.Task;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.SetOptions;
 import com.google.firebase.messaging.FirebaseMessaging;
 
 import java.util.ArrayList;
@@ -52,6 +54,7 @@ public class DeviceIdentity {
                 data.put("fcmToken", token);
                 data.put("displayName", displayName());
                 data.put("mutedListenerIds", new ArrayList<String>());
+                data.put("mutedSoundLabelIds", new ArrayList<String>());
                 data.put("updatedAt", FieldValue.serverTimestamp());
                 db.collection(COLLECTION).document(deviceId).set(data);
             }
@@ -66,6 +69,30 @@ public class DeviceIdentity {
                 : FieldValue.arrayRemove(listenerId);
         db.collection(COLLECTION).document(deviceId)
                 .update("mutedListenerIds", update, "updatedAt", FieldValue.serverTimestamp());
+    }
+
+    /** Mutes/unmutes push notifications for one named soundLabels group, parallel to setListenerMuted. */
+    public static void setSoundLabelMuted(Context context, String soundLabelId, boolean muted) {
+        String deviceId = getDeviceId(context);
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+        Object update = muted
+                ? FieldValue.arrayUnion(soundLabelId)
+                : FieldValue.arrayRemove(soundLabelId);
+        db.collection(COLLECTION).document(deviceId)
+                .update("mutedSoundLabelIds", update, "updatedAt", FieldValue.serverTimestamp());
+    }
+
+    /** Merges the latest battery snapshot into devices/{deviceId}, creating the doc if needed. */
+    public static Task<Void> updateBatteryStatus(Context context, long batteryLevelPct, String batteryHealth,
+                                                  double batteryTempC) {
+        String deviceId = getDeviceId(context);
+        Map<String, Object> data = new HashMap<>();
+        data.put("batteryLevelPct", batteryLevelPct);
+        data.put("batteryHealth", batteryHealth);
+        data.put("batteryTempC", batteryTempC);
+        data.put("batteryUpdatedAt", FieldValue.serverTimestamp());
+        return FirebaseFirestore.getInstance().collection(COLLECTION).document(deviceId)
+                .set(data, SetOptions.merge());
     }
 
     private static String displayName() {

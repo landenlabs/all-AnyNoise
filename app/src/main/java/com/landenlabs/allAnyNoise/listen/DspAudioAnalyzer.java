@@ -10,6 +10,11 @@ import com.landenlabs.allAnyNoise.model.PhysicalSoundType;
  * then tags the episode with a coarse {@link PhysicalSoundType}. The
  * thresholds below are an initial heuristic - expect to tune them against
  * real recordings once classification is running end-to-end.
+ *
+ * <p>Also emits a fixed-length spectral "fingerprint" (see
+ * {@link com.landenlabs.allAnyNoise.model.AudioFeatures#fingerprint}) reusing
+ * the same FFT frames, for grouping similar-sounding episodes together
+ * server-side regardless of which coarse tag they land in.
  */
 public final class DspAudioAnalyzer {
 
@@ -25,6 +30,15 @@ public final class DspAudioAnalyzer {
     private static final double RUMBLE_MAX_CENTROID_HZ = 150;
     private static final double HUM_MAX_ZCR = 0.15;
     private static final double HUM_MAX_CENTROID_VARIANCE_RATIO = 0.25; // stddev / mean
+
+    /**
+     * Fingerprint band count and range - log-spaced so low-frequency detail
+     * (where most household appliance noise lives) isn't drowned out by a
+     * few wide high-frequency bands. Cloud Function matching assumes this
+     * exact length; if you change it, bump the length there too.
+     */
+    static final int FINGERPRINT_BANDS = 16;
+    private static final double FINGERPRINT_MIN_HZ = 50;
 
     private DspAudioAnalyzer() {
     }
@@ -64,6 +78,7 @@ public final class DspAudioAnalyzer {
 
         SpectrumSummary spectrum = analyzeSpectrum(samples, sampleRate);
         features.spectralCentroidHz = spectrum.averageCentroidHz;
+        features.fingerprint = spectrum.fingerprint;
 
         features.soundType = classify(features, attackMs, spectrum.centroidVarianceRatio);
         return features;
@@ -100,6 +115,9 @@ public final class DspAudioAnalyzer {
         double[] centroids = new double[frameCount];
         int validFrames = 0;
         double centroidSum = 0;
+        double[] bandEnergy = new double[FINGERPRINT_BANDS];
+        double nyquistHz = sampleRate / 2.0;
+        double bandLogRange = Math.log(nyquistHz / FINGERPRINT_MIN_HZ);
 
         double[] re = new double[FRAME_SIZE];
         double[] im = new double[FRAME_SIZE];
@@ -115,6 +133,7 @@ public final class DspAudioAnalyzer {
                 double freqHz = bin * sampleRate / (double) FRAME_SIZE;
                 weightedSum += freqHz * magnitude;
                 magnitudeSum += magnitude;
+                bandEnergy[bandIndexForFreq(freqHz, nyquistHz, bandLogRange)] += magnitude;
             }
             if (magnitudeSum <= 0) {
                 continue;
@@ -124,6 +143,7 @@ public final class DspAudioAnalyzer {
             centroidSum += centroid;
         }
 
+        summary.fingerprint = normalize(bandEnergy);
         if (validFrames == 0) {
             return summary;
         }
@@ -138,6 +158,31 @@ public final class DspAudioAnalyzer {
         summary.averageCentroidHz = mean;
         summary.centroidVarianceRatio = mean > 0 ? Math.sqrt(variance) / mean : 1.0;
         return summary;
+    }
+
+    /** Maps a frequency to one of FINGERPRINT_BANDS log-spaced bands between FINGERPRINT_MIN_HZ and Nyquist. */
+    private static int bandIndexForFreq(double freqHz, double nyquistHz, double bandLogRange) {
+        double clamped = Math.max(FINGERPRINT_MIN_HZ, Math.min(nyquistHz, freqHz));
+        double t = Math.log(clamped / FINGERPRINT_MIN_HZ) / bandLogRange;
+        int band = (int) (t * FINGERPRINT_BANDS);
+        return Math.max(0, Math.min(FINGERPRINT_BANDS - 1, band));
+    }
+
+    /** L2-normalizes so the fingerprint's shape - not the episode's loudness - drives similarity matching. */
+    private static double[] normalize(double[] vector) {
+        double sumSquares = 0;
+        for (double v : vector) {
+            sumSquares += v * v;
+        }
+        double norm = Math.sqrt(sumSquares);
+        if (norm <= 0) {
+            return vector;
+        }
+        double[] normalized = new double[vector.length];
+        for (int i = 0; i < vector.length; i++) {
+            normalized[i] = vector[i] / norm;
+        }
+        return normalized;
     }
 
     /** Applies a Hann window before the FFT; a rectangular window leaks energy across
@@ -207,5 +252,6 @@ public final class DspAudioAnalyzer {
     private static final class SpectrumSummary {
         double averageCentroidHz = 0;
         double centroidVarianceRatio = 1.0;
+        double[] fingerprint = new double[FINGERPRINT_BANDS];
     }
 }

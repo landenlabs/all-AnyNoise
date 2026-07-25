@@ -28,7 +28,9 @@ import com.google.firebase.storage.StorageMetadata;
 import com.google.firebase.storage.StorageReference;
 
 import java.io.ByteArrayOutputStream;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -305,10 +307,19 @@ public class NoiseListenerService extends Service {
         data.put("durationSec", durationSec);
         data.put("audioUrl", audioUrl);
         data.put("soundType", features.soundType.name());
+        data.put("fingerprint", toDoubleList(features.fingerprint));
         data.put("startedAt", FieldValue.serverTimestamp());
 
         FirebaseFirestore.getInstance().collection("noiseEvents").document(eventId).set(data)
                 .addOnFailureListener(e -> Log.e(TAG, "Failed to write noise event", e));
+    }
+
+    private static List<Double> toDoubleList(double[] values) {
+        List<Double> list = new ArrayList<>(values.length);
+        for (double value : values) {
+            list.add(value);
+        }
+        return list;
     }
 
     @Override

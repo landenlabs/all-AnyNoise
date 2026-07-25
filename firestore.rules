@@ -9,11 +9,22 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // One doc per installed app instance: FCM token + per-listener opt-outs.
+    // One doc per installed app instance: FCM token + per-listener/per-sound-label opt-outs.
     match /devices/{deviceId} {
       allow read: if true;
       allow create, update: if request.resource.data.keys().hasAll(
         ['fcmToken', 'displayName', 'mutedListenerIds', 'updatedAt']
+      );
+      allow delete: if false;
+    }
+
+    // A human-named group of similar-sounding noiseEvents (see DspAudioAnalyzer's
+    // fingerprint + functions/index.js's auto-matching). Never deleted so
+    // existing noiseEvents.soundLabelId references stay valid.
+    match /soundLabels/{labelId} {
+      allow read: if true;
+      allow create, update: if request.resource.data.keys().hasAll(
+        ['name', 'nameLower', 'physicalSoundType', 'centroid', 'sampleCount']
       );
       allow delete: if false;
     }
@@ -28,13 +39,20 @@ service cloud.firestore {
     }
 
     // Append-only log of detected noise episodes; the Cloud Function reads
-    // these via onDocumentCreated and clients should never edit/delete them.
+    // these via onDocumentCreated (Admin SDK, bypasses these rules entirely)
+    // and clients should never edit/delete the logged event data itself. The
+    // deliberate exceptions: a client may attach a human-assigned sound label
+    // after the fact (SoundLabelManager), or hide it from the unnamed-sounds
+    // review queue without naming it (swipe-to-dismiss / "clear all") -
+    // nothing else may change.
     match /noiseEvents/{eventId} {
       allow read: if true;
       allow create: if request.resource.data.keys().hasAll(
         ['listenerId', 'listenerName', 'durationSec']
       );
-      allow update, delete: if false;
+      allow update: if request.resource.data.diff(resource.data).affectedKeys()
+        .hasOnly(['soundLabelId', 'soundLabelName', 'labelSource', 'dismissed']);
+      allow delete: if false;
     }
   }
 }

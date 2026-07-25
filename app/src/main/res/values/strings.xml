@@ -31,9 +31,29 @@
     <string name="subscriptions_empty">No active listeners yet. Ask someone to start listening from the Listen tab.</string>
     <string name="subscriptions_notify_switch">Notify me</string>
 
+    <string name="subscriptions_labels_title">Named sounds</string>
+    <string name="subscriptions_labels_empty">No sounds named yet. Name a recent sound below to start grouping similar ones.</string>
+
+    <string name="subscriptions_unnamed_title">Recent unnamed sounds</string>
+    <string name="subscriptions_unnamed_empty">No unnamed sounds in recent history.</string>
+    <string name="subscriptions_name_button">Name</string>
+    <string name="subscriptions_name_group_button">Name group</string>
+    <string name="subscriptions_name_dialog_title">Name this sound</string>
+    <string name="subscriptions_name_dialog_hint">e.g. Furnace, Washing machine</string>
+    <string name="subscriptions_name_saved">Saved — similar sounds will use this name automatically.</string>
+    <string name="subscriptions_name_failed">Couldn\'t save name: %1$s</string>
+    <string name="subscriptions_play_button">Play</string>
+    <string name="subscriptions_stop_button">Stop</string>
+    <string name="subscriptions_play_failed">Couldn\'t play this clip.</string>
+    <string name="subscriptions_unknown_group_title">Unknown group #%1$d (%2$d sounds)</string>
+    <string name="subscriptions_clear_all_button">Clear all</string>
+
     <string name="users_title">Registered users</string>
     <string name="users_empty">No devices have registered yet.</string>
     <string name="users_last_seen">Last seen %1$s</string>
+    <string name="users_battery_status">Battery: %1$d%% • %2$s • %3$.1f°C</string>
+    <string name="users_battery_unknown">Battery: not yet reported</string>
+    <string name="users_battery_reported">Battery reported %1$s</string>
 
     <string name="history_title">Activity history</string>
     <string name="history_row_count">%1$d noise events logged</string>
@@ -45,6 +65,7 @@
     <string name="history_col_duration">Duration (s)</string>
     <string name="history_col_audio">Audio URL</string>
     <string name="history_col_type">Sound Type</string>
+    <string name="history_col_label">Sound Label</string>
     <string name="history_view_graph">View graph</string>
     <string name="history_graph_title">Activity graph</string>
     <string name="history_graph_load_error">Couldn\'t load the sheet (it may not be shared as "Anyone with the link can view").</string>
@@ -68,6 +89,8 @@
     <string name="action_settings">Settings</string>
     <string name="settings_title">Settings</string>
     <string name="settings_dark_theme">Dark theme</string>
+    <string name="settings_battery_interval">Battery report interval</string>
+    <string name="settings_light_sensitivity">Light sensitivity</string>
 
     <string name="network_status_title">Network status</string>
     <string name="network_status_connection">Connection: %1$s</string>

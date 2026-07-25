@@ -48,6 +48,15 @@
         android:id="@+id/tv_col4"
         android:layout_width="120dp"
         android:layout_height="wrap_content"
+        android:paddingEnd="6dp"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:textSize="14sp" />
+
+    <TextView
+        android:id="@+id/tv_col5"
+        android:layout_width="140dp"
+        android:layout_height="wrap_content"
         android:maxLines="1"
         android:ellipsize="end"
         android:textSize="14sp" />

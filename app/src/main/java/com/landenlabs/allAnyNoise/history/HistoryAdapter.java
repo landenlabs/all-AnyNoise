@@ -18,8 +18,8 @@ import java.util.List;
 
 /**
  * Renders raw Sheet1 rows [timestamp, listenerName, durationSec, audioUrl,
- * soundType] as-is, except column 0, which is reformatted from UTC ISO
- * 8601 into a short device-local-time string.
+ * soundType, soundLabelName] as-is, except column 0, which is reformatted
+ * from UTC ISO 8601 into a short device-local-time string.
  */
 public class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.ViewHolder> {
 
@@ -104,7 +104,8 @@ public class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.ViewHold
                     itemView.findViewById(R.id.tv_col1),
                     itemView.findViewById(R.id.tv_col2),
                     itemView.findViewById(R.id.tv_col3),
-                    itemView.findViewById(R.id.tv_col4)
+                    itemView.findViewById(R.id.tv_col4),
+                    itemView.findViewById(R.id.tv_col5)
             };
         }
     }

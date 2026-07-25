@@ -4,20 +4,29 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.EditText;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.landenlabs.allAnyNoise.DeviceIdentity;
 import com.landenlabs.allAnyNoise.R;
 import com.landenlabs.allAnyNoise.model.Listener;
+import com.landenlabs.allAnyNoise.model.NoiseEvent;
+import com.landenlabs.allAnyNoise.model.SoundLabel;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.ListenerRegistration;
+import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
+import com.google.firebase.firestore.WriteBatch;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -26,15 +35,36 @@ import java.util.Set;
 
 public class SubscriptionsFragment extends Fragment {
 
-    private RecyclerView recyclerView;
+    // Recent-events window to scan for unnamed sounds; a small over-fetch
+    // filtered client-side, same pattern ListenFragment uses for its
+    // "last event for this listener" lookup - avoids relying on Firestore's
+    // == null query semantics, which don't match events missing the field
+    // entirely (e.g. events logged before this feature shipped).
+    private static final int UNNAMED_QUERY_LIMIT = 30;
+
+    private RecyclerView recyclerViewListeners;
     private TextView tvEmpty;
-    private ListenerAdapter adapter;
+    private ListenerAdapter listenerAdapter;
+
+    private RecyclerView recyclerViewLabels;
+    private TextView tvLabelsEmpty;
+    private SoundLabelAdapter soundLabelAdapter;
+
+    private RecyclerView recyclerViewUnnamed;
+    private TextView tvUnnamedEmpty;
+    private Button btnClearAllUnnamed;
+    private UnnamedEventAdapter unnamedEventAdapter;
 
     private ListenerRegistration listenersRegistration;
     private ListenerRegistration deviceRegistration;
+    private ListenerRegistration soundLabelsRegistration;
+    private ListenerRegistration unnamedEventsRegistration;
 
     private final List<Listener> latestListeners = new ArrayList<>();
-    private final Set<String> latestMutedIds = new HashSet<>();
+    private final Set<String> latestMutedListenerIds = new HashSet<>();
+    private final List<SoundLabel> latestLabels = new ArrayList<>();
+    private final Set<String> latestMutedLabelIds = new HashSet<>();
+    private final List<NoiseEvent> latestUnnamedEvents = new ArrayList<>();
 
     @Nullable
     @Override
@@ -47,13 +77,30 @@ public class SubscriptionsFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        recyclerView = view.findViewById(R.id.rv_listeners);
+        recyclerViewListeners = view.findViewById(R.id.rv_listeners);
         tvEmpty = view.findViewById(R.id.tv_empty);
+        recyclerViewLabels = view.findViewById(R.id.rv_sound_labels);
+        tvLabelsEmpty = view.findViewById(R.id.tv_labels_empty);
+        recyclerViewUnnamed = view.findViewById(R.id.rv_unnamed_events);
+        tvUnnamedEmpty = view.findViewById(R.id.tv_unnamed_empty);
+        btnClearAllUnnamed = view.findViewById(R.id.btn_clear_all_unnamed);
 
-        adapter = new ListenerAdapter((listenerId, muted) ->
+        listenerAdapter = new ListenerAdapter((listenerId, muted) ->
                 DeviceIdentity.setListenerMuted(requireContext(), listenerId, muted));
-        recyclerView.setLayoutManager(new LinearLayoutManager(requireContext()));
-        recyclerView.setAdapter(adapter);
+        recyclerViewListeners.setLayoutManager(new LinearLayoutManager(requireContext()));
+        recyclerViewListeners.setAdapter(listenerAdapter);
+
+        soundLabelAdapter = new SoundLabelAdapter((soundLabelId, muted) ->
+                DeviceIdentity.setSoundLabelMuted(requireContext(), soundLabelId, muted));
+        recyclerViewLabels.setLayoutManager(new LinearLayoutManager(requireContext()));
+        recyclerViewLabels.setAdapter(soundLabelAdapter);
+
+        unnamedEventAdapter = new UnnamedEventAdapter(this::showNameDialog, this::dismissEvent);
+        recyclerViewUnnamed.setLayoutManager(new LinearLayoutManager(requireContext()));
+        recyclerViewUnnamed.setAdapter(unnamedEventAdapter);
+        attachSwipeToDismiss();
+
+        btnClearAllUnnamed.setOnClickListener(v -> clearAllUnnamed());
 
         FirebaseFirestore db = FirebaseFirestore.getInstance();
         String deviceId = DeviceIdentity.getDeviceId(requireContext());
@@ -70,37 +117,212 @@ public class SubscriptionsFragment extends Fragment {
                         listener.id = doc.getId();
                         latestListeners.add(listener);
                     }
-                    renderList();
+                    renderListeners();
                 });
 
         deviceRegistration = db.collection("devices").document(deviceId)
                 .addSnapshotListener((snapshot, error) -> {
-                    latestMutedIds.clear();
+                    latestMutedListenerIds.clear();
+                    latestMutedLabelIds.clear();
                     if (snapshot != null && snapshot.exists()) {
-                        List<String> muted = (List<String>) snapshot.get("mutedListenerIds");
-                        if (muted != null) {
-                            latestMutedIds.addAll(muted);
+                        List<String> mutedListeners = (List<String>) snapshot.get("mutedListenerIds");
+                        if (mutedListeners != null) {
+                            latestMutedListenerIds.addAll(mutedListeners);
+                        }
+                        List<String> mutedLabels = (List<String>) snapshot.get("mutedSoundLabelIds");
+                        if (mutedLabels != null) {
+                            latestMutedLabelIds.addAll(mutedLabels);
                         }
                     }
-                    renderList();
+                    renderListeners();
+                    renderLabels();
+                });
+
+        soundLabelsRegistration = db.collection("soundLabels")
+                .addSnapshotListener((snapshot, error) -> {
+                    if (snapshot == null) {
+                        return;
+                    }
+                    latestLabels.clear();
+                    for (QueryDocumentSnapshot doc : snapshot) {
+                        SoundLabel label = doc.toObject(SoundLabel.class);
+                        label.id = doc.getId();
+                        latestLabels.add(label);
+                    }
+                    renderLabels();
+                });
+
+        unnamedEventsRegistration = db.collection("noiseEvents")
+                .orderBy("startedAt", Query.Direction.DESCENDING)
+                .limit(UNNAMED_QUERY_LIMIT)
+                .addSnapshotListener((snapshot, error) -> {
+                    if (snapshot == null) {
+                        return;
+                    }
+                    List<NoiseEvent> unnamed = new ArrayList<>();
+                    for (QueryDocumentSnapshot doc : snapshot) {
+                        NoiseEvent event = doc.toObject(NoiseEvent.class);
+                        if (event.soundLabelId == null && !Boolean.TRUE.equals(event.dismissed)) {
+                            event.id = doc.getId();
+                            unnamed.add(event);
+                        }
+                    }
+                    renderUnnamed(unnamed);
                 });
     }
 
-    private void renderList() {
-        adapter.submit(latestListeners, latestMutedIds);
+    private void attachSwipeToDismiss() {
+        ItemTouchHelper touchHelper = new ItemTouchHelper(new ItemTouchHelper.SimpleCallback(0,
+                ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT) {
+            @Override
+            public int getMovementFlags(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder) {
+                if (!unnamedEventAdapter.isEventRow(viewHolder.getBindingAdapterPosition())) {
+                    return 0;
+                }
+                return super.getMovementFlags(recyclerView, viewHolder);
+            }
+
+            @Override
+            public boolean onMove(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder,
+                                   @NonNull RecyclerView.ViewHolder target) {
+                return false;
+            }
+
+            @Override
+            public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
+                unnamedEventAdapter.onItemDismissedBySwipe(viewHolder.getBindingAdapterPosition());
+            }
+        });
+        touchHelper.attachToRecyclerView(recyclerViewUnnamed);
+    }
+
+    private void dismissEvent(NoiseEvent event) {
+        FirebaseFirestore.getInstance().collection("noiseEvents").document(event.id)
+                .update("dismissed", true)
+                .addOnFailureListener(e -> {
+                    if (isAdded()) {
+                        Toast.makeText(requireContext(),
+                                getString(R.string.subscriptions_name_failed, e.getMessage()), Toast.LENGTH_LONG).show();
+                    }
+                });
+    }
+
+    private void clearAllUnnamed() {
+        if (latestUnnamedEvents.isEmpty()) {
+            return;
+        }
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+        WriteBatch batch = db.batch();
+        for (NoiseEvent event : latestUnnamedEvents) {
+            batch.update(db.collection("noiseEvents").document(event.id), "dismissed", true);
+        }
+        batch.commit().addOnFailureListener(e -> {
+            if (isAdded()) {
+                Toast.makeText(requireContext(),
+                        getString(R.string.subscriptions_name_failed, e.getMessage()), Toast.LENGTH_LONG).show();
+            }
+        });
+    }
+
+    private void renderListeners() {
+        listenerAdapter.submit(latestListeners, latestMutedListenerIds);
         boolean empty = latestListeners.isEmpty();
         tvEmpty.setVisibility(empty ? View.VISIBLE : View.GONE);
-        recyclerView.setVisibility(empty ? View.GONE : View.VISIBLE);
+        recyclerViewListeners.setVisibility(empty ? View.GONE : View.VISIBLE);
+    }
+
+    private void renderLabels() {
+        soundLabelAdapter.submit(latestLabels, latestMutedLabelIds);
+        boolean empty = latestLabels.isEmpty();
+        tvLabelsEmpty.setVisibility(empty ? View.VISIBLE : View.GONE);
+        recyclerViewLabels.setVisibility(empty ? View.GONE : View.VISIBLE);
+    }
+
+    private void renderUnnamed(List<NoiseEvent> unnamed) {
+        latestUnnamedEvents.clear();
+        latestUnnamedEvents.addAll(unnamed);
+
+        List<FingerprintGrouper.Group> groups = FingerprintGrouper.group(unnamed);
+        List<Object> rows = new ArrayList<>();
+        int groupNumber = 1;
+        for (FingerprintGrouper.Group group : groups) {
+            if (group.events.size() > 1) {
+                String title = getString(R.string.subscriptions_unknown_group_title, groupNumber++, group.events.size());
+                rows.add(new UnnamedEventAdapter.GroupHeader(title, group.events));
+                rows.addAll(group.events);
+            } else {
+                rows.addAll(group.events);
+            }
+        }
+        unnamedEventAdapter.submit(rows);
+
+        boolean empty = unnamed.isEmpty();
+        tvUnnamedEmpty.setVisibility(empty ? View.VISIBLE : View.GONE);
+        recyclerViewUnnamed.setVisibility(empty ? View.GONE : View.VISIBLE);
+        btnClearAllUnnamed.setEnabled(!empty);
+    }
+
+    private void showNameDialog(List<NoiseEvent> events) {
+        View dialogView = LayoutInflater.from(requireContext())
+                .inflate(R.layout.dialog_name_sound, null, false);
+        EditText input = dialogView.findViewById(R.id.et_sound_name);
+
+        new AlertDialog.Builder(requireContext())
+                .setTitle(R.string.subscriptions_name_dialog_title)
+                .setView(dialogView)
+                .setPositiveButton(android.R.string.ok, (dialog, which) ->
+                        nameEventsSequentially(events, 0, input.getText().toString()))
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
+    }
+
+    /**
+     * Names every event in a group one at a time rather than in parallel, so
+     * the first call's label-create (or merge) is visible to the next call -
+     * otherwise concurrent creates for a brand-new name could each miss
+     * seeing the others and create duplicate labels instead of merging.
+     */
+    private void nameEventsSequentially(List<NoiseEvent> events, int index, String name) {
+        if (index >= events.size()) {
+            if (isAdded()) {
+                Toast.makeText(requireContext(), R.string.subscriptions_name_saved, Toast.LENGTH_SHORT).show();
+            }
+            return;
+        }
+        NoiseEvent event = events.get(index);
+        SoundLabelManager.nameEvent(requireContext(), event.id, event.soundType, event.fingerprint, name,
+                new SoundLabelManager.OnNameSavedListener() {
+                    @Override
+                    public void onSaved() {
+                        nameEventsSequentially(events, index + 1, name);
+                    }
+
+                    @Override
+                    public void onFailed(@NonNull Exception e) {
+                        if (isAdded()) {
+                            Toast.makeText(requireContext(),
+                                    getString(R.string.subscriptions_name_failed, e.getMessage()), Toast.LENGTH_LONG).show();
+                        }
+                        nameEventsSequentially(events, index + 1, name);
+                    }
+                });
     }
 
     @Override
     public void onDestroyView() {
         super.onDestroyView();
+        unnamedEventAdapter.stopPlayback();
         if (listenersRegistration != null) {
             listenersRegistration.remove();
         }
         if (deviceRegistration != null) {
             deviceRegistration.remove();
+        }
+        if (soundLabelsRegistration != null) {
+            soundLabelsRegistration.remove();
+        }
+        if (unnamedEventsRegistration != null) {
+            unnamedEventsRegistration.remove();
         }
     }
 }

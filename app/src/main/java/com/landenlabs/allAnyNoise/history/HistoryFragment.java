@@ -112,14 +112,16 @@ public class HistoryFragment extends Fragment {
                 view.findViewById(R.id.tv_head1),
                 view.findViewById(R.id.tv_head2),
                 view.findViewById(R.id.tv_head3),
-                view.findViewById(R.id.tv_head4)
+                view.findViewById(R.id.tv_head4),
+                view.findViewById(R.id.tv_head5)
         };
         headerLabels = new String[]{
                 getString(R.string.history_col_time),
                 getString(R.string.history_col_listener),
                 getString(R.string.history_col_duration),
                 getString(R.string.history_col_audio),
-                getString(R.string.history_col_type)
+                getString(R.string.history_col_type),
+                getString(R.string.history_col_label)
         };
         for (int i = 0; i < headerColumns.length; i++) {
             headerColumns[i].setText(headerLabels[i]);

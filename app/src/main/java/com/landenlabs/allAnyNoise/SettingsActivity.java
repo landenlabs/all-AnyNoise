@@ -5,7 +5,10 @@ import android.net.ConnectivityManager;
 import android.net.Network;
 import android.net.NetworkCapabilities;
 import android.os.Bundle;
+import android.widget.AdapterView;
 import android.widget.Button;
+import android.widget.SeekBar;
+import android.widget.Spinner;
 import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -14,6 +17,7 @@ import androidx.appcompat.widget.Toolbar;
 import androidx.core.content.ContextCompat;
 
 import com.google.android.material.switchmaterial.SwitchMaterial;
+import com.landenlabs.allAnyNoise.battery.BatteryReportScheduler;
 import com.landenlabs.allAnyNoise.history.SheetViewActivity;
 
 import java.io.IOException;
@@ -34,6 +38,12 @@ public class SettingsActivity extends AppCompatActivity {
     private static final String IPV6_PROBE_HOST = "2001:4860:4860::8888";
     private static final int IPV6_PROBE_PORT = 53;
     private static final int IPV6_PROBE_TIMEOUT_MS = 3000;
+
+    // Lux threshold bounds for the light-sensitivity slider — mirrors the
+    // inverted amplitude-threshold mapping used for audio sensitivity in
+    // ListenFragment (higher slider progress = more sensitive = lower threshold).
+    private static final int MIN_THRESHOLD_LUX = 10;
+    private static final int MAX_THRESHOLD_LUX = 100;
 
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
@@ -61,6 +71,9 @@ public class SettingsActivity extends AppCompatActivity {
             recreate();
         });
 
+        setUpBatteryIntervalSpinner();
+        setUpLightSensitivitySeekBar();
+
         Button buttonViewSheet = findViewById(R.id.button_view_sheet);
         buttonViewSheet.setOnClickListener(v ->
                 startActivity(new Intent(this, SheetViewActivity.class)));
@@ -72,6 +85,64 @@ public class SettingsActivity extends AppCompatActivity {
         buttonRetestNetwork.setOnClickListener(v -> checkNetworkStatus());
 
         checkNetworkStatus();
+    }
+
+    private void setUpBatteryIntervalSpinner() {
+        int[] hourValues = getResources().getIntArray(R.array.battery_interval_hours);
+        Spinner spinner = findViewById(R.id.spinner_battery_interval);
+
+        int currentHours = Prefs.getBatteryReportIntervalHours(this);
+        int selection = 0;
+        for (int i = 0; i < hourValues.length; i++) {
+            if (hourValues[i] == currentHours) {
+                selection = i;
+                break;
+            }
+        }
+        spinner.setSelection(selection);
+
+        spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, android.view.View view, int position, long id) {
+                int hours = hourValues[position];
+                Prefs.setBatteryReportIntervalHours(SettingsActivity.this, hours);
+                BatteryReportScheduler.schedule(SettingsActivity.this, hours);
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+            }
+        });
+    }
+
+    private void setUpLightSensitivitySeekBar() {
+        SeekBar seekLightSensitivity = findViewById(R.id.seek_light_sensitivity);
+
+        int savedThreshold = Prefs.getLightSensitivityThresholdLux(this);
+        int seekValue = Math.round(
+                (MAX_THRESHOLD_LUX - savedThreshold) * 9f / (MAX_THRESHOLD_LUX - MIN_THRESHOLD_LUX));
+        seekLightSensitivity.setProgress(Math.max(0, Math.min(9, seekValue)));
+
+        seekLightSensitivity.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+                Prefs.setLightSensitivityThresholdLux(
+                        SettingsActivity.this, lightThresholdFromSeekBar(seekBar.getProgress()));
+            }
+        });
+    }
+
+    private static int lightThresholdFromSeekBar(int progress) {
+        return MAX_THRESHOLD_LUX
+                - Math.round(progress * (MAX_THRESHOLD_LUX - MIN_THRESHOLD_LUX) / 9f);
     }
 
     private void checkNetworkStatus() {

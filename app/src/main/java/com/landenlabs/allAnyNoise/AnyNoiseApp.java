@@ -4,6 +4,8 @@ import android.app.Application;
 
 import androidx.appcompat.app.AppCompatDelegate;
 
+import com.landenlabs.allAnyNoise.battery.BatteryReportScheduler;
+
 public class AnyNoiseApp extends Application {
 
     @Override
@@ -13,5 +15,6 @@ public class AnyNoiseApp extends Application {
         AppCompatDelegate.setDefaultNightMode(Prefs.isDarkThemeEnabled(this)
                 ? AppCompatDelegate.MODE_NIGHT_YES
                 : AppCompatDelegate.MODE_NIGHT_NO);
+        BatteryReportScheduler.schedule(this, Prefs.getBatteryReportIntervalHours(this));
     }
 }

@@ -13,9 +13,17 @@ public class DeviceDoc {
     public String fcmToken;
     public String displayName;
     public List<String> mutedListenerIds = new ArrayList<>();
+    public List<String> mutedSoundLabelIds = new ArrayList<>();
 
     @ServerTimestamp
     public Date updatedAt;
+
+    public Long batteryLevelPct;
+    public String batteryHealth;
+    public Double batteryTempC;
+
+    @ServerTimestamp
+    public Date batteryUpdatedAt;
 
     @Exclude
     public String id;

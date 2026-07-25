@@ -39,7 +39,24 @@ duration. Any install can act as a listener, a subscriber, or both. See
   listener list with per-listener mute/unmute switches.
 - `fcm/AnyNoiseMessagingService` — displays incoming pushes, refreshes token.
 - `DeviceIdentity`, `Prefs`, `NotificationHelper`, `BootReceiver`,
-  `AnyNoiseApp`, `model/` POJOs (`Listener`, `DeviceDoc`, `NoiseEvent`).
+  `AnyNoiseApp`, `model/` POJOs (`Listener`, `DeviceDoc`, `NoiseEvent`,
+  `SoundLabel`).
+- `listen/DspAudioAnalyzer` — DSP rule-based coarse tagging (`soundType`)
+  plus a spectral "fingerprint" for grouping similar-sounding episodes;
+  `subscribe/SoundLabelAdapter` + `UnnamedEventAdapter` + `SoundLabelManager`
+  — SubscriptionsFragment sections to name a reviewed sound and mute
+  notifications per named group, auto-recognized on later matches by the
+  Cloud Function. See `audio-classification.md` for the full design/status.
+- `battery/BatteryStatus`, `battery/BatteryReportWorker`,
+  `battery/BatteryReportScheduler` — a WorkManager periodic job (default 6h,
+  configurable in Settings via a preset spinner: 1/3/6/12/24h) that reads
+  battery level/health/temperature off the sticky `ACTION_BATTERY_CHANGED`
+  broadcast (no permission needed) and merges it into `devices/{deviceId}`
+  (`batteryLevelPct`, `batteryHealth`, `batteryTempC`, `batteryUpdatedAt`).
+  `UsersFragment`/`UserAdapter` show the latest snapshot per device (no
+  history/graphing — that's out of scope, unlike noise events). WorkManager
+  is free to batch/defer this (Doze, App Standby); an approximate schedule
+  is fine.
 - Full resources: layouts, strings, vector icons (`ic_mic`,
   `ic_notifications`), adaptive launcher icon (placeholder art — swap for a
   real logo whenever convenient), manifest with all required permissions.
@@ -76,7 +93,10 @@ Android SDK/Gradle available here, so `assembleDebug` was never run.
    - `firebase login`, copy `.firebaserc.example` → `.firebaserc` with your
      project ID.
    - `cd functions && npm install`.
-   - `firebase deploy --only firestore:rules,storage:rules,functions`.
+   - `firebase deploy --only firestore:rules,storage:rules,functions` —
+     required for sound-label naming/matching to work: `firestore.rules` now
+     has a `soundLabels` collection and a loosened `noiseEvents` update rule,
+     and `functions/index.js` does the fingerprint matching.
 
 3. **Sheets logging (optional)** — follow `appsscript/SETUP.md`: deploy the
    Apps Script as a Web App, put the URL in `functions/.env` as
@@ -99,6 +119,24 @@ Android SDK/Gradle available here, so `assembleDebug` was never run.
      if Sheets is wired up, confirm a row appears.
    - Reboot the listening device while active and confirm
      `BootReceiver` restarts the service.
+   - Sound naming: trigger a noise event, open the Subscriptions tab, name
+     it under "Recent unnamed sounds", confirm it moves to "Named sounds"
+     with a mute switch and the Sheet row (if wired up) shows it in the
+     Sound Label column; trigger a similar sound again and confirm the
+     Cloud Function auto-tags the new event with the same name (check the
+     `noiseEvents` doc's `labelSource: "auto"`) and the push notification
+     body shows the name instead of the coarse sound-type text.
+   - Battery reporting: confirm `devices/{deviceId}` picks up
+     `batteryLevelPct`/`batteryHealth`/`batteryTempC`/`batteryUpdatedAt`
+     shortly after first launch and that the Users tab shows it. Don't wait
+     6h to retest — either temporarily lower the Settings interval to 1h,
+     or trigger the worker on demand from `adb shell` (e.g.
+     `adb shell cmd jobscheduler run -f com.landenlabs.all_anynoise <jobId>`,
+     or just `am force-stop`/relaunch after changing the interval, since
+     `AnyNoiseApp.onCreate()` re-arms the schedule on every process start).
+     Change the interval in Settings and confirm via
+     `WorkManager.getInstance(context).getWorkInfosForUniqueWork("battery_report")`
+     (or `adb shell dumpsys jobscheduler`) that it re-enqueues.
 
 5. **Nice-to-haves not built** (out of original scope, worth considering
    later): real per-device auth (Firebase Anonymous Auth) instead of

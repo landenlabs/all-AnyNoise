@@ -1,7 +1,9 @@
 /**
  * Deploy this bound to a Google Sheet as a Web App (see SETUP.md).
  * The Cloud Function POSTs one JSON body per detected noise event; this
- * appends it as a row: [timestamp, listenerName, durationSec, audioUrl, soundType].
+ * appends it as a row: [timestamp, listenerName, durationSec, audioUrl, soundType, soundLabelName].
+ * soundLabelName is blank until a human names the sound (or a later event
+ * auto-matches an existing name) - see SubscriptionsFragment/SoundLabelManager.
  */
 function doPost(e) {
   var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
@@ -12,7 +14,8 @@ function doPost(e) {
     body.listenerName || '',
     body.durationSec || '',
     body.audioUrl || '',
-    body.soundType || ''
+    body.soundType || '',
+    body.soundLabelName || ''
   ]);
 
   return ContentService

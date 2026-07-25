@@ -4,7 +4,7 @@ This wires detected noise events into a row of a Google Sheet. It's the one
 piece I can't do for you — it needs your Google account.
 
 1. Create (or open) a Google Sheet you want events logged into. Add a header
-   row if you like: `Timestamp | Listener | Duration (s) | Audio URL | Sound Type`.
+   row if you like: `Timestamp | Listener | Duration (s) | Audio URL | Sound Type | Sound Label`.
 2. In the Sheet, go to **Extensions → Apps Script**.
 3. Delete the default `Code.gs` boilerplate and paste in the contents of
    this directory's `Code.gs`.

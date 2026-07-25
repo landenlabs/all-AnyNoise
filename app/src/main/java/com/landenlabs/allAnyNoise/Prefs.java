@@ -19,6 +19,8 @@ public class Prefs {
     private static final String KEY_MIN_DURATION_MS = "min_duration_ms";
     private static final String KEY_RECORD_AUDIO_CLIP = "record_audio_clip";
     private static final String KEY_DARK_THEME = "dark_theme_enabled";
+    private static final String KEY_BATTERY_REPORT_INTERVAL_HOURS = "battery_report_interval_hours";
+    private static final String KEY_LIGHT_SENSITIVITY_LUX = "light_sensitivity_lux";
 
     private static SharedPreferences prefs(Context context) {
         return context.getSharedPreferences(FILE, Context.MODE_PRIVATE);
@@ -81,5 +83,21 @@ public class Prefs {
 
     public static void setDarkThemeEnabled(Context context, boolean enabled) {
         prefs(context).edit().putBoolean(KEY_DARK_THEME, enabled).apply();
+    }
+
+    public static int getBatteryReportIntervalHours(Context context) {
+        return prefs(context).getInt(KEY_BATTERY_REPORT_INTERVAL_HOURS, 6);
+    }
+
+    public static void setBatteryReportIntervalHours(Context context, int hours) {
+        prefs(context).edit().putInt(KEY_BATTERY_REPORT_INTERVAL_HOURS, hours).apply();
+    }
+
+    public static int getLightSensitivityThresholdLux(Context context) {
+        return prefs(context).getInt(KEY_LIGHT_SENSITIVITY_LUX, 50);
+    }
+
+    public static void setLightSensitivityThresholdLux(Context context, int thresholdLux) {
+        prefs(context).edit().putInt(KEY_LIGHT_SENSITIVITY_LUX, thresholdLux).apply();
     }
 }
