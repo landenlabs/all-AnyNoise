@@ -105,4 +105,9 @@
     <string name="network_status_ipv6_reachable">IPv6 internet: reachable (%1$d ms) — history should load quickly</string>
     <string name="network_status_ipv6_unreachable">IPv6 internet: unreachable — history may load slowly or fail</string>
     <string name="network_status_retest">Retest</string>
+
+    <string name="about_title">About</string>
+    <string name="about_version">Version %1$s</string>
+    <string name="about_github">View source on GitHub</string>
+    <string name="about_copyright">© 2026 LanDen Labs — Dennis Lang</string>
 </resources>

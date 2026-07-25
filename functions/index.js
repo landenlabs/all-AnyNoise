@@ -1,3 +1,7 @@
+// ----------------------------------------------------------------------
+// Copyright (c) 2026 LanDen Labs - Dennis Lang
+// https://landenlabs.com
+// ----------------------------------------------------------------------
 const { onDocumentCreated } = require("firebase-functions/v2/firestore");
 const { defineString } = require("firebase-functions/params");
 const logger = require("firebase-functions/logger");

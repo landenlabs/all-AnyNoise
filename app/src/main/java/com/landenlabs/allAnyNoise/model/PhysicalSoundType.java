@@ -1,3 +1,7 @@
+// ----------------------------------------------------------------------
+// Copyright (c) 2026 LanDen Labs - Dennis Lang
+// https://landenlabs.com
+// ----------------------------------------------------------------------
 package com.landenlabs.allAnyNoise.model;
 
 /** Coarse DSP-derived sound tag for a detected noise episode. */

@@ -1,3 +1,7 @@
+// ----------------------------------------------------------------------
+// Copyright (c) 2026 LanDen Labs - Dennis Lang
+// https://landenlabs.com
+// ----------------------------------------------------------------------
 package com.landenlabs.allAnyNoise.listen;
 
 import com.landenlabs.allAnyNoise.model.AudioFeatures;

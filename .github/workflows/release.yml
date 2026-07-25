@@ -1,0 +1,53 @@
+name: Build and Release
+
+# Triggered by set-version.bash / set-version.ps1, which pushes a vX.Y.Z tag
+# after bumping app/build.gradle's versionName/versionCode.
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      # google-services.json holds Firebase project config and is gitignored;
+      # CI needs a copy to build. Store the file's base64 contents as the
+      # GOOGLE_SERVICES_JSON repo secret:
+      #   base64 -i app/google-services.json | pbcopy
+      - name: Restore google-services.json
+        run: echo "${{ secrets.GOOGLE_SERVICES_JSON }}" | base64 --decode > app/google-services.json
+
+      # Release signing key, kept out of the repo. Store as repo secrets:
+      #   KEYSTORE_BASE64    -- base64 -i release.keystore | pbcopy
+      #   KEYSTORE_PASSWORD, KEY_ALIAS, KEY_PASSWORD
+      # app/build.gradle's release signingConfig reads the CI_* env vars below;
+      # without them a release build is simply left unsigned.
+      - name: Restore release keystore
+        run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > "$RUNNER_TEMP/release.keystore"
+
+      - name: Build signed release APK
+        env:
+          CI_KEYSTORE_PATH: ${{ runner.temp }}/release.keystore
+          CI_KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          CI_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          CI_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: ./gradlew assembleRelease --no-daemon
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: app/build/outputs/apk/release/app-release.apk

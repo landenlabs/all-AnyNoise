@@ -1,3 +1,7 @@
+// ----------------------------------------------------------------------
+// Copyright (c) 2026 LanDen Labs - Dennis Lang
+// https://landenlabs.com
+// ----------------------------------------------------------------------
 package com.landenlabs.allAnyNoise.model;
 
 /** DSP metrics computed over one finished episode's PCM, plus the resulting tag. */

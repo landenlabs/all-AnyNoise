@@ -1,9 +1,14 @@
+// ----------------------------------------------------------------------
+// Copyright (c) 2026 LanDen Labs - Dennis Lang
+// https://landenlabs.com
+// ----------------------------------------------------------------------
 package com.landenlabs.allAnyNoise;
 
 import android.content.Intent;
 import android.net.ConnectivityManager;
 import android.net.Network;
 import android.net.NetworkCapabilities;
+import android.net.Uri;
 import android.os.Bundle;
 import android.widget.AdapterView;
 import android.widget.Button;
@@ -32,6 +37,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class SettingsActivity extends AppCompatActivity {
+
+    private static final String GITHUB_URL = "https://github.com/landenlabs/all-AnyNoise";
 
     // Google Public DNS's IPv6 anycast address — a literal IP, so connecting
     // to it exercises the IPv6 route without waiting on a DNS lookup first.
@@ -85,6 +92,16 @@ public class SettingsActivity extends AppCompatActivity {
         buttonRetestNetwork.setOnClickListener(v -> checkNetworkStatus());
 
         checkNetworkStatus();
+        setUpAbout();
+    }
+
+    private void setUpAbout() {
+        TextView tvAboutVersion = findViewById(R.id.tv_about_version);
+        tvAboutVersion.setText(getString(R.string.about_version, BuildConfig.VERSION_NAME));
+
+        Button buttonAboutGithub = findViewById(R.id.button_about_github);
+        buttonAboutGithub.setOnClickListener(v ->
+                startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(GITHUB_URL))));
     }
 
     private void setUpBatteryIntervalSpinner() {

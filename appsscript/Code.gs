@@ -1,3 +1,7 @@
+// ----------------------------------------------------------------------
+// Copyright (c) 2026 LanDen Labs - Dennis Lang
+// https://landenlabs.com
+// ----------------------------------------------------------------------
 /**
  * Deploy this bound to a Google Sheet as a Web App (see SETUP.md).
  * The Cloud Function POSTs one JSON body per detected noise event; this
