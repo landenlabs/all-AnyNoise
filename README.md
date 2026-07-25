@@ -1,7 +1,7 @@
 <table border="0">
   <tr>
     <td>
-      <!-- VERSION -->v6.04.19<br>
+      <!-- VERSION -->v6.07.20<br>
       <!-- DATE -->25-Jul-2026<br>
       Android (Java)<br>
       <a href="https://github.com/landenlabs/all-AnyNoise">Repo</a>
@@ -187,7 +187,7 @@ Windows), run from the repo root:
 ```
 
 This updates `VERSION`, `app/build.gradle` (`versionName` and a derived
-`versionCode`), and the `<!-- VERSION -->`/`<!-- DATE -->` markers in this
+`versionCode`), and the `<!-- VERSION -->v6.07.20<!-- DATE -->25-Jul-2026
 README, then commits, tags, and pushes. Pushing the resulting `vX.Y.Z` tag
 triggers `.github/workflows/release.yml`, which builds a signed release APK
 and publishes it to a GitHub Release. That workflow needs these repo secrets
