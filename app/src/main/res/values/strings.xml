@@ -47,6 +47,22 @@
     <string name="subscriptions_play_failed">Couldn\'t play this clip.</string>
     <string name="subscriptions_unknown_group_title">Unknown group #%1$d (%2$d sounds)</string>
     <string name="subscriptions_clear_all_button">Clear all</string>
+    <string name="subscriptions_manage_button">Manage (%1$d)</string>
+
+    <string name="manage_labels_title">Named sounds</string>
+    <string name="manage_labels_select_all">Select all</string>
+    <string name="manage_labels_delete_selected">Delete selected (%1$d)</string>
+    <string name="manage_labels_edit_button">Edit</string>
+    <string name="manage_labels_delete_button">Delete</string>
+    <string name="manage_labels_rename_dialog_title">Rename sound</string>
+    <string name="manage_labels_rename_saved">Renamed.</string>
+    <string name="manage_labels_rename_failed">Couldn\'t rename: %1$s</string>
+    <string name="manage_labels_delete_confirm_title">Delete named sound?</string>
+    <string name="manage_labels_delete_confirm_message">"\"%1$s\" will be removed. Any sounds matched to it move back to Recent unnamed sounds."</string>
+    <string name="manage_labels_delete_confirm_message_multi">%1$d named sounds will be removed. Any matching sounds move back to Recent unnamed sounds.</string>
+    <string name="manage_labels_delete_failed">Couldn\'t delete: %1$s</string>
+
+    <string name="manage_unnamed_title">Recent unnamed sounds</string>
 
     <string name="users_title">Registered users</string>
     <string name="users_empty">No devices have registered yet.</string>

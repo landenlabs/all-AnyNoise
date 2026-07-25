@@ -13,6 +13,7 @@ import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.WriteBatch;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -123,6 +124,58 @@ public final class SoundLabelManager {
         update.put("labelSource", "manual");
         db.collection("noiseEvents").document(eventId).update(update)
                 .addOnSuccessListener(unused -> callback.onSaved())
+                .addOnFailureListener(callback::onFailed);
+    }
+
+    public interface OnDeleteFinishedListener {
+        void onFinished();
+
+        void onFailed(@NonNull Exception e);
+    }
+
+    /** Renames an existing soundLabels doc; does not touch soundLabelName already copied onto past noiseEvents. */
+    public static void renameLabel(String labelId, String enteredName, OnNameSavedListener callback) {
+        String name = enteredName == null ? "" : enteredName.trim();
+        if (name.isEmpty()) {
+            callback.onFailed(new IllegalArgumentException("Name required"));
+            return;
+        }
+        Map<String, Object> update = new HashMap<>();
+        update.put("name", name);
+        update.put("nameLower", name.toLowerCase(Locale.US));
+        update.put("updatedAt", FieldValue.serverTimestamp());
+        FirebaseFirestore.getInstance().collection("soundLabels").document(labelId)
+                .update(update)
+                .addOnSuccessListener(unused -> callback.onSaved())
+                .addOnFailureListener(callback::onFailed);
+    }
+
+    /**
+     * Deletes a soundLabels doc and reverts any noiseEvents tagged with it back to
+     * unnamed (clearing soundLabelId/soundLabelName/labelSource) so they reappear in
+     * the unnamed-sounds review queue instead of being permanently orphaned with a
+     * dangling label reference.
+     */
+    public static void deleteLabel(Context context, String labelId, OnDeleteFinishedListener callback) {
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+        db.collection("noiseEvents").whereEqualTo("soundLabelId", labelId).get()
+                .addOnSuccessListener(snapshot -> {
+                    WriteBatch batch = db.batch();
+                    for (DocumentSnapshot doc : snapshot.getDocuments()) {
+                        Map<String, Object> revert = new HashMap<>();
+                        revert.put("soundLabelId", FieldValue.delete());
+                        revert.put("soundLabelName", FieldValue.delete());
+                        revert.put("labelSource", FieldValue.delete());
+                        batch.update(doc.getReference(), revert);
+                    }
+                    batch.delete(db.collection("soundLabels").document(labelId));
+                    batch.commit()
+                            .addOnSuccessListener(unused -> {
+                                DeviceIdentity.setSoundLabelMuted(context, labelId, false);
+                                callback.onFinished();
+                            })
+                            .addOnFailureListener(callback::onFailed);
+                })
                 .addOnFailureListener(callback::onFailed);
     }
 

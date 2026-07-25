@@ -37,6 +37,16 @@
             android:parentActivityName=".MainActivity" />
 
         <activity
+            android:name=".subscribe.ManageSoundLabelsActivity"
+            android:exported="false"
+            android:parentActivityName=".MainActivity" />
+
+        <activity
+            android:name=".subscribe.ManageUnnamedEventsActivity"
+            android:exported="false"
+            android:parentActivityName=".MainActivity" />
+
+        <activity
             android:name=".history.SheetViewActivity"
             android:exported="false"
             android:parentActivityName=".SettingsActivity" />

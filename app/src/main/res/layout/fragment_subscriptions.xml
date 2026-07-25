@@ -30,13 +30,28 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp" />
 
-        <TextView
-            android:layout_width="wrap_content"
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="32dp"
-            android:text="@string/subscriptions_labels_title"
-            android:textStyle="bold"
-            android:textSize="18sp" />
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/subscriptions_labels_title"
+                android:textStyle="bold"
+                android:textSize="18sp" />
+
+            <Button
+                android:id="@+id/btn_manage_labels"
+                style="?android:attr/buttonStyleSmall"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+
+        </LinearLayout>
 
         <TextView
             android:id="@+id/tv_labels_empty"
@@ -68,11 +83,10 @@
                 android:textSize="18sp" />
 
             <Button
-                android:id="@+id/btn_clear_all_unnamed"
+                android:id="@+id/btn_manage_unnamed"
                 style="?android:attr/buttonStyleSmall"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/subscriptions_clear_all_button" />
+                android:layout_height="wrap_content" />
 
         </LinearLayout>
 

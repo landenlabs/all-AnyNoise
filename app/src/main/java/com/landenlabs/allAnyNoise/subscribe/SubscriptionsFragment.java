@@ -4,6 +4,7 @@
 // ----------------------------------------------------------------------
 package com.landenlabs.allAnyNoise.subscribe;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -30,13 +31,18 @@ import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
-import com.google.firebase.firestore.WriteBatch;
 
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * Sound page: quick previews of named/unnamed sounds with full-page rename/delete/bulk
+ * management delegated to {@link ManageSoundLabelsActivity} and
+ * {@link ManageUnnamedEventsActivity} (via the "Manage" buttons), since either list can
+ * grow far past what's comfortable to render inline on this scrolling summary page.
+ */
 public class SubscriptionsFragment extends Fragment {
 
     // Recent-events window to scan for unnamed sounds; a small over-fetch
@@ -46,17 +52,22 @@ public class SubscriptionsFragment extends Fragment {
     // entirely (e.g. events logged before this feature shipped).
     private static final int UNNAMED_QUERY_LIMIT = 30;
 
+    // Both lists on this page are just a taste of the full set - the "Manage" buttons
+    // open the full lists (with rename/delete/bulk actions) in their own activities.
+    private static final int PREVIEW_LIMIT = 3;
+
     private RecyclerView recyclerViewListeners;
     private TextView tvEmpty;
     private ListenerAdapter listenerAdapter;
 
     private RecyclerView recyclerViewLabels;
     private TextView tvLabelsEmpty;
+    private Button btnManageLabels;
     private SoundLabelAdapter soundLabelAdapter;
 
     private RecyclerView recyclerViewUnnamed;
     private TextView tvUnnamedEmpty;
-    private Button btnClearAllUnnamed;
+    private Button btnManageUnnamed;
     private UnnamedEventAdapter unnamedEventAdapter;
 
     private ListenerRegistration listenersRegistration;
@@ -85,9 +96,10 @@ public class SubscriptionsFragment extends Fragment {
         tvEmpty = view.findViewById(R.id.tv_empty);
         recyclerViewLabels = view.findViewById(R.id.rv_sound_labels);
         tvLabelsEmpty = view.findViewById(R.id.tv_labels_empty);
+        btnManageLabels = view.findViewById(R.id.btn_manage_labels);
         recyclerViewUnnamed = view.findViewById(R.id.rv_unnamed_events);
         tvUnnamedEmpty = view.findViewById(R.id.tv_unnamed_empty);
-        btnClearAllUnnamed = view.findViewById(R.id.btn_clear_all_unnamed);
+        btnManageUnnamed = view.findViewById(R.id.btn_manage_unnamed);
 
         listenerAdapter = new ListenerAdapter((listenerId, muted) ->
                 DeviceIdentity.setListenerMuted(requireContext(), listenerId, muted));
@@ -104,7 +116,10 @@ public class SubscriptionsFragment extends Fragment {
         recyclerViewUnnamed.setAdapter(unnamedEventAdapter);
         attachSwipeToDismiss();
 
-        btnClearAllUnnamed.setOnClickListener(v -> clearAllUnnamed());
+        btnManageLabels.setOnClickListener(v ->
+                startActivity(new Intent(requireContext(), ManageSoundLabelsActivity.class)));
+        btnManageUnnamed.setOnClickListener(v ->
+                startActivity(new Intent(requireContext(), ManageUnnamedEventsActivity.class)));
 
         FirebaseFirestore db = FirebaseFirestore.getInstance();
         String deviceId = DeviceIdentity.getDeviceId(requireContext());
@@ -211,23 +226,6 @@ public class SubscriptionsFragment extends Fragment {
                 });
     }
 
-    private void clearAllUnnamed() {
-        if (latestUnnamedEvents.isEmpty()) {
-            return;
-        }
-        FirebaseFirestore db = FirebaseFirestore.getInstance();
-        WriteBatch batch = db.batch();
-        for (NoiseEvent event : latestUnnamedEvents) {
-            batch.update(db.collection("noiseEvents").document(event.id), "dismissed", true);
-        }
-        batch.commit().addOnFailureListener(e -> {
-            if (isAdded()) {
-                Toast.makeText(requireContext(),
-                        getString(R.string.subscriptions_name_failed, e.getMessage()), Toast.LENGTH_LONG).show();
-            }
-        });
-    }
-
     private void renderListeners() {
         listenerAdapter.submit(latestListeners, latestMutedListenerIds);
         boolean empty = latestListeners.isEmpty();
@@ -236,17 +234,21 @@ public class SubscriptionsFragment extends Fragment {
     }
 
     private void renderLabels() {
-        soundLabelAdapter.submit(latestLabels, latestMutedLabelIds);
         boolean empty = latestLabels.isEmpty();
+        List<SoundLabel> preview = empty ? latestLabels : latestLabels.subList(0, Math.min(PREVIEW_LIMIT, latestLabels.size()));
+        soundLabelAdapter.submit(preview, latestMutedLabelIds);
         tvLabelsEmpty.setVisibility(empty ? View.VISIBLE : View.GONE);
         recyclerViewLabels.setVisibility(empty ? View.GONE : View.VISIBLE);
+        btnManageLabels.setEnabled(!empty);
+        btnManageLabels.setText(getString(R.string.subscriptions_manage_button, latestLabels.size()));
     }
 
     private void renderUnnamed(List<NoiseEvent> unnamed) {
         latestUnnamedEvents.clear();
         latestUnnamedEvents.addAll(unnamed);
 
-        List<FingerprintGrouper.Group> groups = FingerprintGrouper.group(unnamed);
+        List<NoiseEvent> preview = unnamed.isEmpty() ? unnamed : unnamed.subList(0, Math.min(PREVIEW_LIMIT, unnamed.size()));
+        List<FingerprintGrouper.Group> groups = FingerprintGrouper.group(preview);
         List<Object> rows = new ArrayList<>();
         int groupNumber = 1;
         for (FingerprintGrouper.Group group : groups) {
@@ -263,7 +265,8 @@ public class SubscriptionsFragment extends Fragment {
         boolean empty = unnamed.isEmpty();
         tvUnnamedEmpty.setVisibility(empty ? View.VISIBLE : View.GONE);
         recyclerViewUnnamed.setVisibility(empty ? View.GONE : View.VISIBLE);
-        btnClearAllUnnamed.setEnabled(!empty);
+        btnManageUnnamed.setEnabled(!empty);
+        btnManageUnnamed.setText(getString(R.string.subscriptions_manage_button, unnamed.size()));
     }
 
     private void showNameDialog(List<NoiseEvent> events) {
