@@ -84,6 +84,30 @@
 
     </LinearLayout>
 
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingStart="24dp"
+        android:paddingEnd="24dp"
+        android:paddingBottom="24dp">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/settings_vibration_sensitivity"
+            android:textSize="16sp" />
+
+        <SeekBar
+            android:id="@+id/seek_vibration_sensitivity"
+            android:layout_width="120dp"
+            android:layout_height="wrap_content"
+            android:max="9" />
+
+    </LinearLayout>
+
     <Button
         android:id="@+id/button_view_sheet"
         style="@style/Widget.MaterialComponents.Button.TextButton"

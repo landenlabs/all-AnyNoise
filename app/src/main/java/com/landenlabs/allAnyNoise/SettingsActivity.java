@@ -35,6 +35,8 @@ import java.net.SocketException;
 import java.util.Enumeration;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.function.IntConsumer;
+import java.util.function.IntSupplier;
 
 public class SettingsActivity extends AppCompatActivity {
 
@@ -46,11 +48,13 @@ public class SettingsActivity extends AppCompatActivity {
     private static final int IPV6_PROBE_PORT = 53;
     private static final int IPV6_PROBE_TIMEOUT_MS = 3000;
 
-    // Lux threshold bounds for the light-sensitivity slider — mirrors the
-    // inverted amplitude-threshold mapping used for audio sensitivity in
-    // ListenFragment (higher slider progress = more sensitive = lower threshold).
+    // Threshold bounds for the sensitivity sliders below — mirror the inverted
+    // amplitude-threshold mapping used for audio sensitivity in ListenFragment
+    // (higher slider progress = more sensitive = lower threshold).
     private static final int MIN_THRESHOLD_LUX = 10;
     private static final int MAX_THRESHOLD_LUX = 100;
+    private static final int MIN_THRESHOLD_VIBRATION = 1;
+    private static final int MAX_THRESHOLD_VIBRATION = 8;
 
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
@@ -79,7 +83,12 @@ public class SettingsActivity extends AppCompatActivity {
         });
 
         setUpBatteryIntervalSpinner();
-        setUpLightSensitivitySeekBar();
+        setUpSensitivitySeekBar(R.id.seek_light_sensitivity, MIN_THRESHOLD_LUX, MAX_THRESHOLD_LUX,
+                () -> Prefs.getLightSensitivityThresholdLux(this),
+                threshold -> Prefs.setLightSensitivityThresholdLux(this, threshold));
+        setUpSensitivitySeekBar(R.id.seek_vibration_sensitivity, MIN_THRESHOLD_VIBRATION, MAX_THRESHOLD_VIBRATION,
+                () -> Prefs.getVibrationSensitivityThreshold(this),
+                threshold -> Prefs.setVibrationSensitivityThreshold(this, threshold));
 
         Button buttonViewSheet = findViewById(R.id.button_view_sheet);
         buttonViewSheet.setOnClickListener(v ->
@@ -132,15 +141,15 @@ public class SettingsActivity extends AppCompatActivity {
         });
     }
 
-    private void setUpLightSensitivitySeekBar() {
-        SeekBar seekLightSensitivity = findViewById(R.id.seek_light_sensitivity);
+    private void setUpSensitivitySeekBar(int seekBarId, int minThreshold, int maxThreshold,
+                                          IntSupplier getThreshold, IntConsumer saveThreshold) {
+        SeekBar seekBar = findViewById(seekBarId);
 
-        int savedThreshold = Prefs.getLightSensitivityThresholdLux(this);
-        int seekValue = Math.round(
-                (MAX_THRESHOLD_LUX - savedThreshold) * 9f / (MAX_THRESHOLD_LUX - MIN_THRESHOLD_LUX));
-        seekLightSensitivity.setProgress(Math.max(0, Math.min(9, seekValue)));
+        int savedThreshold = getThreshold.getAsInt();
+        int seekValue = Math.round((maxThreshold - savedThreshold) * 9f / (maxThreshold - minThreshold));
+        seekBar.setProgress(Math.max(0, Math.min(9, seekValue)));
 
-        seekLightSensitivity.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+        seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
             }
@@ -151,15 +160,11 @@ public class SettingsActivity extends AppCompatActivity {
 
             @Override
             public void onStopTrackingTouch(SeekBar seekBar) {
-                Prefs.setLightSensitivityThresholdLux(
-                        SettingsActivity.this, lightThresholdFromSeekBar(seekBar.getProgress()));
+                int threshold = maxThreshold
+                        - Math.round(seekBar.getProgress() * (maxThreshold - minThreshold) / 9f);
+                saveThreshold.accept(threshold);
             }
         });
-    }
-
-    private static int lightThresholdFromSeekBar(int progress) {
-        return MAX_THRESHOLD_LUX
-                - Math.round(progress * (MAX_THRESHOLD_LUX - MIN_THRESHOLD_LUX) / 9f);
     }
 
     private void checkNetworkStatus() {

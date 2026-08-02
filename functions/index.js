@@ -13,12 +13,17 @@ initializeApp();
 
 const SHEETS_WEBHOOK_URL = defineString("SHEETS_WEBHOOK_URL", { default: "" });
 
+/** Ambient-sensor on/off transitions carry no audio fingerprint or human label - they're logged, never pushed. */
+const SENSOR_ONLY_SOUND_TYPES = new Set(["LIGHT_ON", "LIGHT_OFF", "VIBRATION_ON", "VIBRATION_OFF"]);
+
 /**
  * Fires whenever the Android app writes a noiseEvents/{eventId} document.
  * Tries to auto-match the event's spectral fingerprint to an existing
  * human-named soundLabels centroid, then fans the event out as an FCM push
  * to every device that hasn't muted that listener or that sound label, then
  * (best-effort) logs a row to a Google Sheet via an Apps Script webhook.
+ * Light/vibration on-off events skip the fingerprint match and the FCM push -
+ * they only get logged to the Sheet.
  */
 exports.onNoiseEventCreated = onDocumentCreated("noiseEvents/{eventId}", async (event) => {
   const snapshot = event.data;
@@ -28,23 +33,26 @@ exports.onNoiseEventCreated = onDocumentCreated("noiseEvents/{eventId}", async (
   const noiseEvent = snapshot.data();
   const { listenerId, listenerName, durationSec, soundType, fingerprint } = noiseEvent;
   const db = getFirestore();
+  const isSensorOnlyEvent = SENSOR_ONLY_SOUND_TYPES.has(soundType);
 
-  const label = await matchSoundLabel(db, soundType, fingerprint);
-  if (label) {
-    noiseEvent.soundLabelId = label.id;
-    noiseEvent.soundLabelName = label.name;
-    await snapshot.ref.update({
-      soundLabelId: label.id,
-      soundLabelName: label.name,
-      labelSource: "auto",
-    });
+  const tasks = [logToSheet(noiseEvent)];
+
+  if (!isSensorOnlyEvent) {
+    const label = await matchSoundLabel(db, soundType, fingerprint);
+    if (label) {
+      noiseEvent.soundLabelId = label.id;
+      noiseEvent.soundLabelName = label.name;
+      await snapshot.ref.update({
+        soundLabelId: label.id,
+        soundLabelName: label.name,
+        labelSource: "auto",
+      });
+    }
+    tasks.push(notifySubscribers(db, listenerId, listenerName, durationSec, soundType, event.params.eventId,
+        label ? label.id : null, label ? label.name : null));
   }
 
-  await Promise.all([
-    notifySubscribers(db, listenerId, listenerName, durationSec, soundType, event.params.eventId,
-        label ? label.id : null, label ? label.name : null),
-    logToSheet(noiseEvent),
-  ]);
+  await Promise.all(tasks);
 });
 
 const SOUND_TYPE_LABELS = {

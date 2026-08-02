@@ -25,6 +25,7 @@ public class Prefs {
     private static final String KEY_DARK_THEME = "dark_theme_enabled";
     private static final String KEY_BATTERY_REPORT_INTERVAL_HOURS = "battery_report_interval_hours";
     private static final String KEY_LIGHT_SENSITIVITY_LUX = "light_sensitivity_lux";
+    private static final String KEY_VIBRATION_SENSITIVITY = "vibration_sensitivity_threshold";
 
     private static SharedPreferences prefs(Context context) {
         return context.getSharedPreferences(FILE, Context.MODE_PRIVATE);
@@ -103,5 +104,14 @@ public class Prefs {
 
     public static void setLightSensitivityThresholdLux(Context context, int thresholdLux) {
         prefs(context).edit().putInt(KEY_LIGHT_SENSITIVITY_LUX, thresholdLux).apply();
+    }
+
+    /** Threshold in m/s^2 of linear-acceleration magnitude (gravity already excluded). */
+    public static int getVibrationSensitivityThreshold(Context context) {
+        return prefs(context).getInt(KEY_VIBRATION_SENSITIVITY, 3);
+    }
+
+    public static void setVibrationSensitivityThreshold(Context context, int threshold) {
+        prefs(context).edit().putInt(KEY_VIBRATION_SENSITIVITY, threshold).apply();
     }
 }

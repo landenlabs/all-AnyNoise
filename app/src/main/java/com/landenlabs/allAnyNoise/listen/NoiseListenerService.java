@@ -9,6 +9,10 @@ import android.app.Service;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ServiceInfo;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.media.AudioFormat;
 import android.media.AudioRecord;
 import android.media.MediaRecorder;
@@ -70,6 +74,14 @@ public class NoiseListenerService extends Service {
     private static final long MAX_EPISODE_MS = 120_000;
     private static final int MAX_EPISODE_AUDIO_BYTES = 6 * 1024 * 1024;
 
+    // A raw reading must sit on the far side of the deadband below and hold
+    // there for the sensor's debounce window before an on/off transition is
+    // reported - this rejects both sensor jitter around the threshold and
+    // momentary flicker (e.g. a hallway motion light or a single door bump).
+    private static final long LIGHT_DEBOUNCE_MS = 2000;
+    private static final long VIBRATION_DEBOUNCE_MS = 1000;
+    private static final float HYSTERESIS_RATIO = 0.5f;
+
     /** Callback for the Listen UI to show a live level meter. */
     public interface LevelListener {
         void onLevelUpdate(int level0to100, boolean episodeActive);
@@ -90,6 +102,14 @@ public class NoiseListenerService extends Service {
     private int thresholdAmplitude;
     private long minDurationMs;
     private boolean recordAudioClip;
+
+    private SensorManager sensorManager;
+    private SensorEventListener lightSensorListener;
+    private SensorEventListener vibrationSensorListener;
+    private int lightThresholdLux;
+    private int vibrationThreshold;
+    private EdgeDetector lightEdge;
+    private EdgeDetector vibrationEdge;
 
     @Override
     public void onCreate() {
@@ -121,6 +141,11 @@ public class NoiseListenerService extends Service {
         if (!running) {
             startRecordingThread();
         }
+        if (sensorManager == null) {
+            lightThresholdLux = Prefs.getLightSensitivityThresholdLux(this);
+            vibrationThreshold = Prefs.getVibrationSensitivityThreshold(this);
+            registerAmbientSensors();
+        }
 
         return START_STICKY;
     }
@@ -131,6 +156,7 @@ public class NoiseListenerService extends Service {
             recordingThread.interrupt();
             recordingThread = null;
         }
+        unregisterAmbientSensors();
         Prefs.setListenerActive(this, false);
         if (listenerId != null) {
             FirebaseFirestore.getInstance().collection("listeners")
@@ -139,6 +165,146 @@ public class NoiseListenerService extends Service {
         }
         stopForeground(true);
         stopSelf();
+    }
+
+    private void registerAmbientSensors() {
+        sensorManager = getSystemService(SensorManager.class);
+        if (sensorManager == null) {
+            Log.w(TAG, "SensorManager unavailable; light/vibration detection disabled.");
+            return;
+        }
+
+        Sensor lightSensor = sensorManager.getDefaultSensor(Sensor.TYPE_LIGHT);
+        if (lightSensor == null) {
+            Log.w(TAG, "No ambient light sensor on this device; light on/off detection disabled.");
+        } else {
+            lightEdge = new EdgeDetector(LIGHT_DEBOUNCE_MS, HYSTERESIS_RATIO);
+            lightSensorListener = new SensorEventListener() {
+                @Override
+                public void onSensorChanged(SensorEvent event) {
+                    Boolean fired = lightEdge.evaluate(event.values[0], lightThresholdLux, System.currentTimeMillis());
+                    if (fired != null) {
+                        reportBinaryEvent(fired ? "LIGHT_ON" : "LIGHT_OFF");
+                    }
+                }
+
+                @Override
+                public void onAccuracyChanged(Sensor sensor, int accuracy) {
+                }
+            };
+            sensorManager.registerListener(lightSensorListener, lightSensor, SensorManager.SENSOR_DELAY_NORMAL);
+        }
+
+        // TYPE_LINEAR_ACCELERATION already has gravity subtracted out, so its
+        // magnitude is a direct read of shake/vibration energy with no extra
+        // gravity-estimation filtering needed.
+        Sensor vibrationSensor = sensorManager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION);
+        if (vibrationSensor == null) {
+            Log.w(TAG, "No linear-acceleration sensor on this device; vibration on/off detection disabled.");
+        } else {
+            vibrationEdge = new EdgeDetector(VIBRATION_DEBOUNCE_MS, HYSTERESIS_RATIO);
+            vibrationSensorListener = new SensorEventListener() {
+                @Override
+                public void onSensorChanged(SensorEvent event) {
+                    float magnitude = vectorMagnitude(event.values);
+                    Boolean fired = vibrationEdge.evaluate(magnitude, vibrationThreshold, System.currentTimeMillis());
+                    if (fired != null) {
+                        reportBinaryEvent(fired ? "VIBRATION_ON" : "VIBRATION_OFF");
+                    }
+                }
+
+                @Override
+                public void onAccuracyChanged(Sensor sensor, int accuracy) {
+                }
+            };
+            sensorManager.registerListener(vibrationSensorListener, vibrationSensor, SensorManager.SENSOR_DELAY_NORMAL);
+        }
+    }
+
+    private void unregisterAmbientSensors() {
+        if (sensorManager != null) {
+            if (lightSensorListener != null) {
+                sensorManager.unregisterListener(lightSensorListener);
+            }
+            if (vibrationSensorListener != null) {
+                sensorManager.unregisterListener(vibrationSensorListener);
+            }
+        }
+        sensorManager = null;
+        lightSensorListener = null;
+        vibrationSensorListener = null;
+        lightEdge = null;
+        vibrationEdge = null;
+    }
+
+    private static float vectorMagnitude(float[] values) {
+        float sumSquares = 0f;
+        for (float v : values) {
+            sumSquares += v * v;
+        }
+        return (float) Math.sqrt(sumSquares);
+    }
+
+    private void reportBinaryEvent(String soundType) {
+        Map<String, Object> data = new HashMap<>();
+        data.put("listenerId", listenerId);
+        data.put("listenerName", listenerName);
+        data.put("soundType", soundType);
+        data.put("startedAt", FieldValue.serverTimestamp());
+
+        FirebaseFirestore.getInstance().collection("noiseEvents").document().set(data)
+                .addOnFailureListener(e -> Log.e(TAG, "Failed to write " + soundType + " event", e));
+    }
+
+    /**
+     * Shared on/off edge detector for ambient sensors (light, vibration, ...):
+     * a raw reading must clear a hysteresis deadband around the threshold and
+     * hold there for debounceMs before a state transition commits, so sensor
+     * jitter and brief flicker never fire a false event.
+     */
+    private static class EdgeDetector {
+        private final long debounceMs;
+        private final float hysteresisRatio;
+        private Boolean state;
+        private boolean pendingState;
+        private long pendingSince;
+
+        EdgeDetector(long debounceMs, float hysteresisRatio) {
+            this.debounceMs = debounceMs;
+            this.hysteresisRatio = hysteresisRatio;
+        }
+
+        /** Returns the newly committed state (true=on, false=off) if a transition just fired, else null. */
+        Boolean evaluate(float value, float threshold, long now) {
+            boolean rawOn = value > threshold;
+            boolean rawOff = value < threshold * hysteresisRatio;
+            if (!rawOn && !rawOff) {
+                pendingSince = 0;
+                return null;
+            }
+            boolean candidate = rawOn;
+
+            if (state == null) {
+                state = candidate;
+                pendingSince = 0;
+                return null;
+            }
+            if (candidate == state) {
+                pendingSince = 0;
+                return null;
+            }
+            if (pendingSince == 0 || pendingState != candidate) {
+                pendingState = candidate;
+                pendingSince = now;
+                return null;
+            }
+            if (now - pendingSince >= debounceMs) {
+                state = candidate;
+                pendingSince = 0;
+                return candidate;
+            }
+            return null;
+        }
     }
 
     private void startRecordingThread() {
@@ -333,6 +499,7 @@ public class NoiseListenerService extends Service {
         if (recordingThread != null) {
             recordingThread.interrupt();
         }
+        unregisterAmbientSensors();
     }
 
     @Nullable

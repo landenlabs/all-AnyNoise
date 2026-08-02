@@ -67,6 +67,7 @@
     <string name="users_title">Registered users</string>
     <string name="users_empty">No devices have registered yet.</string>
     <string name="users_last_seen">Last seen %1$s</string>
+    <string name="toolbar_battery_percent">%1$d%%</string>
     <string name="users_battery_status">Battery: %1$d%% • %2$s • %3$.1f°C</string>
     <string name="users_battery_unknown">Battery: not yet reported</string>
     <string name="users_battery_reported">Battery reported %1$s</string>
@@ -107,6 +108,7 @@
     <string name="settings_dark_theme">Dark theme</string>
     <string name="settings_battery_interval">Battery report interval</string>
     <string name="settings_light_sensitivity">Light sensitivity</string>
+    <string name="settings_vibration_sensitivity">Vibration sensitivity</string>
 
     <string name="network_status_title">Network status</string>
     <string name="network_status_connection">Connection: %1$s</string>

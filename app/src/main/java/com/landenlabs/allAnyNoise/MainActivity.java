@@ -5,7 +5,10 @@
 package com.landenlabs.allAnyNoise;
 
 import android.Manifest;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -13,6 +16,7 @@ import android.os.PowerManager;
 import android.provider.Settings;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.TextView;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
@@ -21,6 +25,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.fragment.app.Fragment;
 
+import com.landenlabs.allAnyNoise.battery.BatteryStatus;
 import com.landenlabs.allAnyNoise.history.HistoryFragment;
 import com.landenlabs.allAnyNoise.listen.ListenFragment;
 import com.landenlabs.allAnyNoise.subscribe.SubscriptionsFragment;
@@ -37,6 +42,15 @@ public class MainActivity extends AppCompatActivity {
                 // Nothing further to do here; ListenFragment re-checks permissions before starting.
             });
 
+    private TextView batteryPercentView;
+
+    private final BroadcastReceiver batteryReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            updateBatteryPercent();
+        }
+    };
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -44,6 +58,7 @@ public class MainActivity extends AppCompatActivity {
 
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+        batteryPercentView = findViewById(R.id.toolbar_battery_percent);
 
         DeviceIdentity.registerDevice(this);
         requestRuntimePermissions();
@@ -69,6 +84,26 @@ public class MainActivity extends AppCompatActivity {
 
         if (savedInstanceState == null) {
             bottomNav.setSelectedItemId(R.id.nav_listen);
+        }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        updateBatteryPercent();
+        registerReceiver(batteryReceiver, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
+    }
+
+    @Override
+    protected void onPause() {
+        unregisterReceiver(batteryReceiver);
+        super.onPause();
+    }
+
+    private void updateBatteryPercent() {
+        BatteryStatus batteryStatus = BatteryStatus.read(this);
+        if (batteryStatus != null && batteryStatus.levelPct >= 0) {
+            batteryPercentView.setText(getString(R.string.toolbar_battery_percent, batteryStatus.levelPct));
         }
     }
 
