@@ -82,6 +82,11 @@ public class NoiseListenerService extends Service {
     private static final long VIBRATION_DEBOUNCE_MS = 1000;
     private static final float HYSTERESIS_RATIO = 0.5f;
 
+    // Live strip-chart samples are throttled to this interval so the full-page
+    // live view doesn't redraw at the raw ~15Hz audio-chunk rate; light/vibration
+    // arrive at SENSOR_DELAY_NORMAL (~5Hz) already and aren't throttled further.
+    private static final long AUDIO_SAMPLE_INTERVAL_MS = 150;
+
     /** Callback for the Listen UI to show a live level meter. */
     public interface LevelListener {
         void onLevelUpdate(int level0to100, boolean episodeActive);
@@ -91,6 +96,19 @@ public class NoiseListenerService extends Service {
 
     public static void setLevelListener(@Nullable LevelListener listener) {
         levelListener = listener;
+    }
+
+    /** Callback for the full-page live view's three strip charts. */
+    public interface LiveSampleListener {
+        void onAudioSample(long timestampMs, float amplitude);
+        void onLightSample(long timestampMs, float lux);
+        void onVibrationSample(long timestampMs, float magnitude);
+    }
+
+    private static volatile LiveSampleListener liveSampleListener;
+
+    public static void setLiveSampleListener(@Nullable LiveSampleListener listener) {
+        liveSampleListener = listener;
     }
 
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
@@ -110,6 +128,7 @@ public class NoiseListenerService extends Service {
     private int vibrationThreshold;
     private EdgeDetector lightEdge;
     private EdgeDetector vibrationEdge;
+    private long lastAudioSampleAt;
 
     @Override
     public void onCreate() {
@@ -182,10 +201,12 @@ public class NoiseListenerService extends Service {
             lightSensorListener = new SensorEventListener() {
                 @Override
                 public void onSensorChanged(SensorEvent event) {
-                    Boolean fired = lightEdge.evaluate(event.values[0], lightThresholdLux, System.currentTimeMillis());
+                    long now = System.currentTimeMillis();
+                    Boolean fired = lightEdge.evaluate(event.values[0], lightThresholdLux, now);
                     if (fired != null) {
-                        reportBinaryEvent(fired ? "LIGHT_ON" : "LIGHT_OFF");
+                        reportBinaryEvent(fired ? "LIGHT_ON" : "LIGHT_OFF", event.values[0]);
                     }
+                    publishLightSample(now, event.values[0]);
                 }
 
                 @Override
@@ -206,11 +227,13 @@ public class NoiseListenerService extends Service {
             vibrationSensorListener = new SensorEventListener() {
                 @Override
                 public void onSensorChanged(SensorEvent event) {
+                    long now = System.currentTimeMillis();
                     float magnitude = vectorMagnitude(event.values);
-                    Boolean fired = vibrationEdge.evaluate(magnitude, vibrationThreshold, System.currentTimeMillis());
+                    Boolean fired = vibrationEdge.evaluate(magnitude, vibrationThreshold, now);
                     if (fired != null) {
-                        reportBinaryEvent(fired ? "VIBRATION_ON" : "VIBRATION_OFF");
+                        reportBinaryEvent(fired ? "VIBRATION_ON" : "VIBRATION_OFF", magnitude);
                     }
+                    publishVibrationSample(now, magnitude);
                 }
 
                 @Override
@@ -245,11 +268,18 @@ public class NoiseListenerService extends Service {
         return (float) Math.sqrt(sumSquares);
     }
 
-    private void reportBinaryEvent(String soundType) {
+    private void reportBinaryEvent(String soundType, float sensorValue) {
         Map<String, Object> data = new HashMap<>();
         data.put("listenerId", listenerId);
         data.put("listenerName", listenerName);
+        // firestore.rules requires this key on every noiseEvents create; 0 renders
+        // as a blank cell in the Sheet (Code.gs treats it as falsy), so duration
+        // still reads as "skipped" for these binary on/off events.
+        data.put("durationSec", 0.0);
         data.put("soundType", soundType);
+        // The raw lux/vibration-magnitude reading that tripped this transition -
+        // lets the History graph plot it against the configured threshold.
+        data.put("sensorValue", (double) sensorValue);
         data.put("startedAt", FieldValue.serverTimestamp());
 
         FirebaseFirestore.getInstance().collection("noiseEvents").document().set(data)
@@ -395,6 +425,10 @@ public class NoiseListenerService extends Service {
                 }
 
                 publishLevel(amplitude, episodeActive);
+                if (now - lastAudioSampleAt >= AUDIO_SAMPLE_INTERVAL_MS) {
+                    lastAudioSampleAt = now;
+                    publishAudioSample(now, amplitude);
+                }
             }
         } finally {
             audioRecord.stop();
@@ -431,6 +465,30 @@ public class NoiseListenerService extends Service {
         }
         int level = (int) Math.min(100, (amplitude * 100L) / Math.max(1, thresholdAmplitude * 2));
         mainHandler.post(() -> listener.onLevelUpdate(level, episodeActive));
+    }
+
+    private void publishAudioSample(long timestampMs, long amplitude) {
+        LiveSampleListener listener = liveSampleListener;
+        if (listener == null) {
+            return;
+        }
+        mainHandler.post(() -> listener.onAudioSample(timestampMs, amplitude));
+    }
+
+    private void publishLightSample(long timestampMs, float lux) {
+        LiveSampleListener listener = liveSampleListener;
+        if (listener == null) {
+            return;
+        }
+        mainHandler.post(() -> listener.onLightSample(timestampMs, lux));
+    }
+
+    private void publishVibrationSample(long timestampMs, float magnitude) {
+        LiveSampleListener listener = liveSampleListener;
+        if (listener == null) {
+            return;
+        }
+        mainHandler.post(() -> listener.onVibrationSample(timestampMs, magnitude));
     }
 
     private void finishEpisode(boolean metMinDuration, long elapsedMs, ByteArrayOutputStream episodeAudio) {

@@ -74,6 +74,10 @@ public class Prefs {
         return prefs(context).getInt(KEY_THRESHOLD_AMPLITUDE, 4000);
     }
 
+    public static void setThresholdAmplitude(Context context, int thresholdAmplitude) {
+        prefs(context).edit().putInt(KEY_THRESHOLD_AMPLITUDE, thresholdAmplitude).apply();
+    }
+
     public static long getMinDurationMs(Context context) {
         return prefs(context).getLong(KEY_MIN_DURATION_MS, 3000);
     }

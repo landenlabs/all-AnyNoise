@@ -19,6 +19,9 @@ public class NoiseEvent {
     public String audioUrl;
     public String soundType;
 
+    /** Raw lux/vibration-magnitude reading that tripped a LIGHT_ON/OFF or VIBRATION_ON/OFF transition; null for audio events. */
+    public Double sensorValue;
+
     /** Spectral fingerprint used for soundLabels matching; see DspAudioAnalyzer. */
     public List<Double> fingerprint;
 

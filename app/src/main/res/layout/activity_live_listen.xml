@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  No fixed orientation is declared for this activity (see manifest) - it
+  opens in whatever orientation the device is currently in, and the top
+  Button + TextView plus the three equal-weight strip charts below just
+  reflow with the available width/height either way.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <Button
+        android:id="@+id/btn_live_stop"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="16dp"
+        android:text="@string/listen_stop" />
+
+    <TextView
+        android:id="@+id/tv_live_last_event"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:paddingBottom="8dp"
+        android:text="@string/listen_last_event_none" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingStart="16dp"
+            android:textStyle="bold"
+            android:text="@string/live_listen_section_audio" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingStart="16dp"
+            android:textSize="12sp"
+            android:textColor="?android:attr/textColorSecondary"
+            android:text="@string/live_listen_axis_audio" />
+
+        <com.github.mikephil.charting.charts.LineChart
+            android:id="@+id/chart_live_audio"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:layout_margin="8dp" />
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingStart="16dp"
+            android:textStyle="bold"
+            android:text="@string/live_listen_section_light" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingStart="16dp"
+            android:textSize="12sp"
+            android:textColor="?android:attr/textColorSecondary"
+            android:text="@string/live_listen_axis_light" />
+
+        <com.github.mikephil.charting.charts.LineChart
+            android:id="@+id/chart_live_light"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:layout_margin="8dp" />
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingStart="16dp"
+            android:textStyle="bold"
+            android:text="@string/live_listen_section_vibration" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingStart="16dp"
+            android:textSize="12sp"
+            android:textColor="?android:attr/textColorSecondary"
+            android:text="@string/live_listen_axis_vibration" />
+
+        <com.github.mikephil.charting.charts.LineChart
+            android:id="@+id/chart_live_vibration"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:layout_margin="8dp" />
+
+    </LinearLayout>
+
+</LinearLayout>

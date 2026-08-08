@@ -51,6 +51,8 @@ public class SettingsActivity extends AppCompatActivity {
     // Threshold bounds for the sensitivity sliders below — mirror the inverted
     // amplitude-threshold mapping used for audio sensitivity in ListenFragment
     // (higher slider progress = more sensitive = lower threshold).
+    private static final int MIN_THRESHOLD_AMPLITUDE = 800;
+    private static final int MAX_THRESHOLD_AMPLITUDE = 8000;
     private static final int MIN_THRESHOLD_LUX = 10;
     private static final int MAX_THRESHOLD_LUX = 100;
     private static final int MIN_THRESHOLD_VIBRATION = 1;
@@ -83,6 +85,9 @@ public class SettingsActivity extends AppCompatActivity {
         });
 
         setUpBatteryIntervalSpinner();
+        setUpSensitivitySeekBar(R.id.seek_audio_sensitivity, MIN_THRESHOLD_AMPLITUDE, MAX_THRESHOLD_AMPLITUDE,
+                () -> Prefs.getThresholdAmplitude(this),
+                threshold -> Prefs.setThresholdAmplitude(this, threshold));
         setUpSensitivitySeekBar(R.id.seek_light_sensitivity, MIN_THRESHOLD_LUX, MAX_THRESHOLD_LUX,
                 () -> Prefs.getLightSensitivityThresholdLux(this),
                 threshold -> Prefs.setLightSensitivityThresholdLux(this, threshold));

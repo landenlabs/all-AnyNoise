@@ -26,6 +26,18 @@
     <string name="listen_last_event_label">Last sound recorded</string>
     <string name="listen_last_event_none">No sound recorded yet.</string>
     <string name="listen_last_event_value">%1$s · %2$.1fs</string>
+    <string name="listen_last_event_binary_value">%1$s · %2$s</string>
+    <string name="listen_last_event_light_on">Light on</string>
+    <string name="listen_last_event_light_off">Light off</string>
+    <string name="listen_last_event_vibration_on">Vibration on</string>
+    <string name="listen_last_event_vibration_off">Vibration off</string>
+
+    <string name="live_listen_section_audio">Audio</string>
+    <string name="live_listen_section_light">Light</string>
+    <string name="live_listen_section_vibration">Vibration</string>
+    <string name="live_listen_axis_audio">Y: Amplitude · X: Time (last 5 min)</string>
+    <string name="live_listen_axis_light">Y: Light (lux) · X: Time (last 5 min)</string>
+    <string name="live_listen_axis_vibration">Y: Vibration (m/s²) · X: Time (last 5 min)</string>
 
     <string name="subscriptions_title">Available sound sources</string>
     <string name="subscriptions_empty">No active listeners yet. Ask someone to start listening from the Listen tab.</string>
@@ -87,6 +99,15 @@
     <string name="history_graph_title">Activity graph</string>
     <string name="history_graph_load_error">Couldn\'t load the sheet (it may not be shared as "Anyone with the link can view").</string>
     <string name="history_graph_empty">No noise events recorded yet.</string>
+    <string name="history_graph_section_noise">Noise</string>
+    <string name="history_graph_section_light">Light on/off (dashed line = threshold)</string>
+    <string name="history_graph_section_vibration">Vibration on/off (dashed line = threshold)</string>
+    <string name="history_graph_light_empty">No light events recorded yet.</string>
+    <string name="history_graph_vibration_empty">No vibration events recorded yet.</string>
+    <string name="history_graph_threshold_label">Threshold: %1$.0f</string>
+    <string name="history_graph_axis_noise">Y: Duration (sec) · X: Time</string>
+    <string name="history_graph_axis_light">Y: Light (lux) · X: Time</string>
+    <string name="history_graph_axis_vibration">Y: Vibration (m/s²) · X: Time</string>
 
     <string name="sheet_view_title">Activity Sheet</string>
     <string name="settings_view_sheet">View activity sheet</string>
@@ -107,6 +128,7 @@
     <string name="settings_title">Settings</string>
     <string name="settings_dark_theme">Dark theme</string>
     <string name="settings_battery_interval">Battery report interval</string>
+    <string name="settings_audio_sensitivity">Audio sensitivity</string>
     <string name="settings_light_sensitivity">Light sensitivity</string>
     <string name="settings_vibration_sensitivity">Vibration sensitivity</string>
 

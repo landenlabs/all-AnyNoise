@@ -152,7 +152,31 @@ public class ListenFragment extends Fragment implements NoiseListenerService.Lev
         String time = event.startedAt != null
                 ? new SimpleDateFormat("MMM d, HH:mm:ss", Locale.getDefault()).format(event.startedAt)
                 : "?";
-        tvLastEvent.setText(getString(R.string.listen_last_event_value, time, event.durationSec));
+        String binaryState = describeBinaryState(event.soundType);
+        if (binaryState != null) {
+            tvLastEvent.setText(getString(R.string.listen_last_event_binary_value, time, binaryState));
+        } else {
+            tvLastEvent.setText(getString(R.string.listen_last_event_value, time, event.durationSec));
+        }
+    }
+
+    @Nullable
+    private String describeBinaryState(@Nullable String soundType) {
+        if (soundType == null) {
+            return null;
+        }
+        switch (soundType) {
+            case "LIGHT_ON":
+                return getString(R.string.listen_last_event_light_on);
+            case "LIGHT_OFF":
+                return getString(R.string.listen_last_event_light_off);
+            case "VIBRATION_ON":
+                return getString(R.string.listen_last_event_vibration_on);
+            case "VIBRATION_OFF":
+                return getString(R.string.listen_last_event_vibration_off);
+            default:
+                return null;
+        }
     }
 
     private void restoreSavedConfig() {
@@ -220,6 +244,8 @@ public class ListenFragment extends Fragment implements NoiseListenerService.Lev
         ContextCompat.startForegroundService(requireContext(), intent);
 
         updateStartStopUi(true);
+
+        startActivity(new android.content.Intent(requireContext(), LiveListenActivity.class));
     }
 
     private void stopListening() {
@@ -265,6 +291,17 @@ public class ListenFragment extends Fragment implements NoiseListenerService.Lev
     public void onResume() {
         super.onResume();
         NoiseListenerService.setLevelListener(this);
+        boolean active = Prefs.isListenerActive(requireContext());
+        // Resyncs the button/status text in case listening was stopped from
+        // LiveListenActivity's own Stop button while this tab was backgrounded.
+        updateStartStopUi(active);
+        // While listening is active, this tab is never the one the user should
+        // land on - always hand off to the live graph (e.g. if LiveListenActivity
+        // was reclaimed by the system while backgrounded and this tab surfaced
+        // as the task's new top instead).
+        if (active) {
+            startActivity(new android.content.Intent(requireContext(), LiveListenActivity.class));
+        }
     }
 
     @Override

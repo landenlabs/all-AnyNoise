@@ -52,6 +52,12 @@
             android:parentActivityName=".SettingsActivity" />
 
         <activity
+            android:name=".listen.LiveListenActivity"
+            android:exported="false"
+            android:launchMode="singleTop"
+            android:parentActivityName=".MainActivity" />
+
+        <activity
             android:name=".history.HistoryGraphActivity"
             android:exported="false"
             android:screenOrientation="landscape"

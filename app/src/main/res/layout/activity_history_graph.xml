@@ -1,32 +1,143 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<!--
+  Phone variant: each graph is sized in code (HistoryGraphActivity) to ~80%
+  of screen height so it's actually usable (pinch/drag) on a small display -
+  three of those stacked exceeds one screen, hence the ScrollView. See
+  layout-sw600dp for the tablet variant, which has room to show all three
+  at once without scrolling.
+-->
+<ScrollView
+    android:id="@+id/scroll_container"
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical">
+    android:fillViewport="true">
 
-    <androidx.appcompat.widget.Toolbar
-        android:id="@+id/toolbar"
-        android:layout_width="match_parent"
-        android:layout_height="?attr/actionBarSize"
-        android:background="?attr/colorPrimary"
-        android:theme="@style/ThemeOverlay.MaterialComponents.Dark.ActionBar"
-        app:title="@string/history_graph_title"
-        app:titleTextColor="?attr/colorOnPrimary" />
-
-    <TextView
-        android:id="@+id/tv_graph_error"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:padding="24dp"
-        android:textColor="?android:attr/textColorSecondary"
-        android:visibility="gone" />
+        android:orientation="vertical">
 
-    <com.github.mikephil.charting.charts.LineChart
-        android:id="@+id/chart_history"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:layout_margin="8dp" />
+        <LinearLayout
+            android:id="@+id/section_noise"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            android:orientation="vertical">
 
-</LinearLayout>
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingStart="16dp"
+                android:paddingTop="8dp"
+                android:textStyle="bold"
+                android:text="@string/history_graph_section_noise" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingStart="16dp"
+                android:textSize="12sp"
+                android:textColor="?android:attr/textColorSecondary"
+                android:text="@string/history_graph_axis_noise" />
+
+            <TextView
+                android:id="@+id/tv_graph_error"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="24dp"
+                android:textColor="?android:attr/textColorSecondary"
+                android:visibility="gone" />
+
+            <com.github.mikephil.charting.charts.LineChart
+                android:id="@+id/chart_history"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:layout_margin="8dp" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/section_light"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingStart="16dp"
+                android:paddingTop="8dp"
+                android:textStyle="bold"
+                android:text="@string/history_graph_section_light" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingStart="16dp"
+                android:textSize="12sp"
+                android:textColor="?android:attr/textColorSecondary"
+                android:text="@string/history_graph_axis_light" />
+
+            <TextView
+                android:id="@+id/tv_light_graph_error"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="24dp"
+                android:textColor="?android:attr/textColorSecondary"
+                android:visibility="gone" />
+
+            <com.github.mikephil.charting.charts.LineChart
+                android:id="@+id/chart_light"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:layout_margin="8dp" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/section_vibration"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingStart="16dp"
+                android:paddingTop="8dp"
+                android:textStyle="bold"
+                android:text="@string/history_graph_section_vibration" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingStart="16dp"
+                android:textSize="12sp"
+                android:textColor="?android:attr/textColorSecondary"
+                android:text="@string/history_graph_axis_vibration" />
+
+            <TextView
+                android:id="@+id/tv_vibration_graph_error"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="24dp"
+                android:textColor="?android:attr/textColorSecondary"
+                android:visibility="gone" />
+
+            <com.github.mikephil.charting.charts.LineChart
+                android:id="@+id/chart_vibration"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:layout_margin="8dp" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</ScrollView>
