@@ -49,7 +49,7 @@ exports.onNoiseEventCreated = onDocumentCreated("noiseEvents/{eventId}", async (
       });
     }
     tasks.push(notifySubscribers(db, listenerId, listenerName, durationSec, soundType, event.params.eventId,
-        label ? label.id : null, label ? label.name : null));
+        label ? label.id : null, label ? label.name : null, noiseEvent.startedAt));
   }
 
   await Promise.all(tasks);
@@ -153,8 +153,23 @@ async function foldFingerprintIntoCentroid(db, labelId, fingerprint) {
   });
 }
 
+/** Formats a Date as e.g. "Sun, Sep 20 9:36pm". */
+function formatEventStart(date) {
+  const datePart = new Intl.DateTimeFormat("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  }).format(date);
+  const timePart = new Intl.DateTimeFormat("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  }).format(date).replace(/\s?(AM|PM)$/i, (m) => m.trim().toLowerCase());
+  return `${datePart} ${timePart}`;
+}
+
 async function notifySubscribers(db, listenerId, listenerName, durationSec, soundType, eventId,
-    soundLabelId, soundLabelName) {
+    soundLabelId, soundLabelName, startedAt) {
   const devicesSnap = await db.collection("devices").get();
 
   const targets = [];
@@ -175,11 +190,12 @@ async function notifySubscribers(db, listenerId, listenerName, durationSec, soun
   }
 
   const soundDescription = soundLabelName || describeSoundType(soundType);
+  const startedAtDate = startedAt && startedAt.toDate ? startedAt.toDate() : new Date();
   const response = await getMessaging().sendEachForMulticast({
     tokens: targets.map((t) => t.token),
     notification: {
       title: `Noise detected: ${listenerName}`,
-      body: `${soundDescription} for ${Math.round(durationSec)}s`,
+      body: `${soundDescription} for ${Math.round(durationSec)}s\n${formatEventStart(startedAtDate)}`,
     },
     data: {
       listenerId,

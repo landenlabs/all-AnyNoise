@@ -86,7 +86,11 @@ public class DeviceIdentity {
                 .update("mutedSoundLabelIds", update, "updatedAt", FieldValue.serverTimestamp());
     }
 
-    /** Merges the latest battery snapshot into devices/{deviceId}, creating the doc if needed. */
+    /**
+     * Merges the latest battery snapshot into devices/{deviceId}, creating the doc if needed.
+     * Also bumps updatedAt since this runs on a periodic WorkManager job - the only heartbeat
+     * that fires regardless of whether the user opens the app UI.
+     */
     public static Task<Void> updateBatteryStatus(Context context, long batteryLevelPct, String batteryHealth,
                                                   double batteryTempC) {
         String deviceId = getDeviceId(context);
@@ -95,6 +99,7 @@ public class DeviceIdentity {
         data.put("batteryHealth", batteryHealth);
         data.put("batteryTempC", batteryTempC);
         data.put("batteryUpdatedAt", FieldValue.serverTimestamp());
+        data.put("updatedAt", FieldValue.serverTimestamp());
         return FirebaseFirestore.getInstance().collection(COLLECTION).document(deviceId)
                 .set(data, SetOptions.merge());
     }
