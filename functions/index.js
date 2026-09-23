@@ -193,11 +193,14 @@ async function notifySubscribers(db, listenerId, listenerName, durationSec, soun
   const startedAtDate = startedAt && startedAt.toDate ? startedAt.toDate() : new Date();
   const response = await getMessaging().sendEachForMulticast({
     tokens: targets.map((t) => t.token),
-    notification: {
+    // Data-only message: a combined notification+data payload gets auto-displayed
+    // by the system tray whenever the app is backgrounded, which bypasses
+    // onMessageReceived() (and its custom tap PendingIntent) entirely. Keeping
+    // title/body in `data` forces onMessageReceived() to run every time so the
+    // client always controls the notification and where a tap lands.
+    data: {
       title: `Noise detected: ${listenerName}`,
       body: `${soundDescription} for ${Math.round(durationSec)}s\n${formatEventStart(startedAtDate)}`,
-    },
-    data: {
       listenerId,
       eventId,
       soundType: soundType || "UNKNOWN",
