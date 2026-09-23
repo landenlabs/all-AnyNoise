@@ -24,15 +24,20 @@ import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 
 /**
- * Review queue of recent noiseEvents that have no soundLabelId yet. Rows are
- * either a {@link GroupHeader} (a client-side-only cluster of similar
- * fingerprints, see FingerprintGrouper) or a plain {@link NoiseEvent}; a
- * group's "Name group" button and a lone event's "Name" button both funnel
- * into the same callback, just with a different list size.
+ * Renders a list of noiseEvents rows, either the unnamed-only review queue
+ * (SubscriptionsFragment's preview) or the fuller recent-events history
+ * (ManageUnnamedEventsActivity). Rows are either a {@link GroupHeader}
+ * (a client-side-only cluster of similar fingerprints, see FingerprintGrouper)
+ * or a plain {@link NoiseEvent}; a group's "Name group" button and a lone
+ * event's "Name" button both funnel into the same callback, just with a
+ * different list size. Tapping an event row toggles an inline detail block
+ * (full date/time, duration, classification, an Ignore button).
  */
 public class UnnamedEventAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
@@ -61,6 +66,7 @@ public class UnnamedEventAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
     private final List<Object> rows = new ArrayList<>();
     private final OnNameRequestedListener nameListener;
     private final OnDismissRequestedListener dismissListener;
+    private final Set<String> expandedEventIds = new HashSet<>();
 
     private MediaPlayer activePlayer;
     private String activePlayEventId;
@@ -80,6 +86,26 @@ public class UnnamedEventAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
 
     public boolean isEventRow(int position) {
         return position >= 0 && position < rows.size() && rows.get(position) instanceof NoiseEvent;
+    }
+
+    /** Marks the given event expanded (showing its detail block) and refreshes its row if present. */
+    public void expand(String eventId) {
+        expandedEventIds.add(eventId);
+        int position = indexOfEvent(eventId);
+        if (position >= 0) {
+            notifyItemChanged(position);
+        }
+    }
+
+    /** @return the adapter position of the given event id, or -1 if it isn't currently in the list. */
+    public int indexOfEvent(String eventId) {
+        for (int i = 0; i < rows.size(); i++) {
+            Object row = rows.get(i);
+            if (row instanceof NoiseEvent && eventId.equals(((NoiseEvent) row).id)) {
+                return i;
+            }
+        }
+        return -1;
     }
 
     /** Optimistically removes the swiped row locally; the caller still owns the actual Firestore write. */
@@ -137,6 +163,8 @@ public class UnnamedEventAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
         NoiseEvent event = (NoiseEvent) row;
         EventViewHolder holder = (EventViewHolder) viewHolder;
         holder.summary.setText(summarize(event));
+        holder.nameButton.setText(event.soundLabelName != null
+                ? R.string.subscriptions_rename_button : R.string.subscriptions_name_button);
         holder.nameButton.setOnClickListener(v -> nameListener.onNameRequested(Collections.singletonList(event)));
 
         boolean hasAudio = event.audioUrl != null;
@@ -144,6 +172,34 @@ public class UnnamedEventAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
         boolean isPlayingThis = event.id != null && event.id.equals(activePlayEventId);
         holder.playButton.setText(isPlayingThis ? R.string.subscriptions_stop_button : R.string.subscriptions_play_button);
         holder.playButton.setOnClickListener(v -> togglePlay(event, v.getContext()));
+
+        boolean expanded = event.id != null && expandedEventIds.contains(event.id);
+        holder.detailLayout.setVisibility(expanded ? View.VISIBLE : View.GONE);
+        if (expanded) {
+            Context context = holder.itemView.getContext();
+            String fullDateTime = event.startedAt != null
+                    ? new SimpleDateFormat("EEE, MMM d yyyy HH:mm:ss", Locale.getDefault()).format(event.startedAt)
+                    : "?";
+            holder.detailDateTime.setText(fullDateTime);
+            holder.detailDuration.setText(context.getString(R.string.subscriptions_detail_duration, event.durationSec));
+            String classification = event.soundLabelName != null
+                    ? event.soundLabelName
+                    : (event.soundType != null ? event.soundType.replace('_', ' ') : "?");
+            holder.detailClassification.setText(context.getString(R.string.subscriptions_detail_classification, classification));
+            holder.ignoreButton.setOnClickListener(v -> dismissListener.onDismissRequested(event));
+        }
+
+        holder.itemView.setOnClickListener(v -> toggleExpanded(event, holder.getBindingAdapterPosition()));
+    }
+
+    private void toggleExpanded(NoiseEvent event, int position) {
+        if (event.id == null || position == RecyclerView.NO_POSITION) {
+            return;
+        }
+        if (!expandedEventIds.remove(event.id)) {
+            expandedEventIds.add(event.id);
+        }
+        notifyItemChanged(position);
     }
 
     @Override
@@ -194,12 +250,22 @@ public class UnnamedEventAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
         final TextView summary;
         final Button playButton;
         final Button nameButton;
+        final View detailLayout;
+        final TextView detailDateTime;
+        final TextView detailDuration;
+        final TextView detailClassification;
+        final Button ignoreButton;
 
         EventViewHolder(@NonNull View itemView) {
             super(itemView);
             summary = itemView.findViewById(R.id.tv_summary);
             playButton = itemView.findViewById(R.id.btn_play);
             nameButton = itemView.findViewById(R.id.btn_name);
+            detailLayout = itemView.findViewById(R.id.layout_detail);
+            detailDateTime = itemView.findViewById(R.id.tv_detail_datetime);
+            detailDuration = itemView.findViewById(R.id.tv_detail_duration);
+            detailClassification = itemView.findViewById(R.id.tv_detail_classification);
+            ignoreButton = itemView.findViewById(R.id.btn_ignore);
         }
     }
 

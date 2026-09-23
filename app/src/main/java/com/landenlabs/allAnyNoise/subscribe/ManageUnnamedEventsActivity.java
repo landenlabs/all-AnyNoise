@@ -32,12 +32,16 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Full-page management of the unnamed-sounds review queue. Mirrors the section that
- * used to live inline on {@link SubscriptionsFragment} (which now only shows a short
- * preview of this list); fetches a much larger window than that preview since this
- * page exists specifically to handle a long queue.
+ * Full-page history of recent noiseEvents (named and unnamed, excluding dismissed
+ * ones), doubling as the destination for a "sound detected" notification tap
+ * (see {@link #EXTRA_EVENT_ID}), which lands here with that event expanded and
+ * scrolled into view. SubscriptionsFragment separately shows a short, unnamed-only
+ * preview of the same underlying data via the same {@link UnnamedEventAdapter}.
  */
 public class ManageUnnamedEventsActivity extends AppCompatActivity {
+
+    /** String extra: id of a noiseEvents doc to expand and scroll to on load, e.g. from a notification tap. */
+    public static final String EXTRA_EVENT_ID = "event_id";
 
     private static final int UNNAMED_QUERY_LIMIT = 200;
 
@@ -47,8 +51,9 @@ public class ManageUnnamedEventsActivity extends AppCompatActivity {
     private UnnamedEventAdapter adapter;
 
     private ListenerRegistration unnamedEventsRegistration;
+    private String pendingEventIdToExpand;
 
-    private final List<NoiseEvent> latestUnnamedEvents = new ArrayList<>();
+    private final List<NoiseEvent> latestEvents = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -65,6 +70,8 @@ public class ManageUnnamedEventsActivity extends AppCompatActivity {
         tvEmpty = findViewById(R.id.tv_unnamed_empty);
         btnClearAll = findViewById(R.id.btn_clear_all_unnamed);
 
+        pendingEventIdToExpand = getIntent().getStringExtra(EXTRA_EVENT_ID);
+
         adapter = new UnnamedEventAdapter(this::showNameDialog, this::dismissEvent);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         recyclerView.setAdapter(adapter);
@@ -79,15 +86,15 @@ public class ManageUnnamedEventsActivity extends AppCompatActivity {
                     if (snapshot == null) {
                         return;
                     }
-                    List<NoiseEvent> unnamed = new ArrayList<>();
+                    List<NoiseEvent> recentEvents = new ArrayList<>();
                     for (QueryDocumentSnapshot doc : snapshot) {
                         NoiseEvent event = doc.toObject(NoiseEvent.class);
-                        if (event.soundLabelId == null && !Boolean.TRUE.equals(event.dismissed)) {
+                        if (!Boolean.TRUE.equals(event.dismissed)) {
                             event.id = doc.getId();
-                            unnamed.add(event);
+                            recentEvents.add(event);
                         }
                     }
-                    render(unnamed);
+                    render(recentEvents);
                 });
     }
 
@@ -124,40 +131,40 @@ public class ManageUnnamedEventsActivity extends AppCompatActivity {
     }
 
     private void clearAll() {
-        if (latestUnnamedEvents.isEmpty()) {
+        if (latestEvents.isEmpty()) {
             return;
         }
         FirebaseFirestore db = FirebaseFirestore.getInstance();
         WriteBatch batch = db.batch();
-        for (NoiseEvent event : latestUnnamedEvents) {
+        for (NoiseEvent event : latestEvents) {
             batch.update(db.collection("noiseEvents").document(event.id), "dismissed", true);
         }
         batch.commit().addOnFailureListener(e -> Toast.makeText(this,
                 getString(R.string.subscriptions_name_failed, e.getMessage()), Toast.LENGTH_LONG).show());
     }
 
-    private void render(List<NoiseEvent> unnamed) {
-        latestUnnamedEvents.clear();
-        latestUnnamedEvents.addAll(unnamed);
+    private void render(List<NoiseEvent> recentEvents) {
+        latestEvents.clear();
+        latestEvents.addAll(recentEvents);
 
-        List<FingerprintGrouper.Group> groups = FingerprintGrouper.group(unnamed);
-        List<Object> rows = new ArrayList<>();
-        int groupNumber = 1;
-        for (FingerprintGrouper.Group group : groups) {
-            if (group.events.size() > 1) {
-                String title = getString(R.string.subscriptions_unknown_group_title, groupNumber++, group.events.size());
-                rows.add(new UnnamedEventAdapter.GroupHeader(title, group.events));
-                rows.addAll(group.events);
-            } else {
-                rows.addAll(group.events);
-            }
-        }
+        // Flat, time-ordered list (no similarity clustering here - that's a triage aid
+        // specific to SubscriptionsFragment's unnamed-only preview, not this full history).
+        List<Object> rows = new ArrayList<>(recentEvents);
         adapter.submit(rows);
 
-        boolean empty = unnamed.isEmpty();
+        boolean empty = recentEvents.isEmpty();
         tvEmpty.setVisibility(empty ? View.VISIBLE : View.GONE);
         recyclerView.setVisibility(empty ? View.GONE : View.VISIBLE);
         btnClearAll.setEnabled(!empty);
+
+        if (pendingEventIdToExpand != null) {
+            int position = adapter.indexOfEvent(pendingEventIdToExpand);
+            if (position >= 0) {
+                adapter.expand(pendingEventIdToExpand);
+                recyclerView.scrollToPosition(position);
+                pendingEventIdToExpand = null;
+            }
+        }
     }
 
     private void showNameDialog(List<NoiseEvent> events) {

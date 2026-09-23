@@ -39,7 +39,7 @@
         android:layout_height="wrap_content"
         android:layout_marginStart="24dp"
         android:layout_marginEnd="24dp"
-        android:text="@string/subscriptions_unnamed_empty"
+        android:text="@string/manage_unnamed_empty"
         android:visibility="gone" />
 
     <androidx.recyclerview.widget.RecyclerView

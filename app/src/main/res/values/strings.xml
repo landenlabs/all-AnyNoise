@@ -60,6 +60,10 @@
     <string name="subscriptions_unknown_group_title">Unknown group #%1$d (%2$d sounds)</string>
     <string name="subscriptions_clear_all_button">Clear all</string>
     <string name="subscriptions_manage_button">Manage (%1$d)</string>
+    <string name="subscriptions_ignore_button">Ignore</string>
+    <string name="subscriptions_rename_button">Rename</string>
+    <string name="subscriptions_detail_classification">Classification: %1$s</string>
+    <string name="subscriptions_detail_duration">Duration: %1$.1fs</string>
 
     <string name="manage_labels_title">Named sounds</string>
     <string name="manage_labels_select_all">Select all</string>
@@ -74,7 +78,8 @@
     <string name="manage_labels_delete_confirm_message_multi">%1$d named sounds will be removed. Any matching sounds move back to Recent unnamed sounds.</string>
     <string name="manage_labels_delete_failed">Couldn\'t delete: %1$s</string>
 
-    <string name="manage_unnamed_title">Recent unnamed sounds</string>
+    <string name="manage_unnamed_title">Recent sound events</string>
+    <string name="manage_unnamed_empty">No recent sound events.</string>
 
     <string name="users_title">Registered users</string>
     <string name="users_empty">No devices have registered yet.</string>

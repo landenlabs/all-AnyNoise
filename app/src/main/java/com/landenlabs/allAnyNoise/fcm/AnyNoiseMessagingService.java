@@ -10,11 +10,13 @@ import android.content.Intent;
 import androidx.annotation.NonNull;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
+import androidx.core.app.TaskStackBuilder;
 
 import com.landenlabs.allAnyNoise.DeviceIdentity;
 import com.landenlabs.allAnyNoise.MainActivity;
 import com.landenlabs.allAnyNoise.NotificationHelper;
 import com.landenlabs.allAnyNoise.R;
+import com.landenlabs.allAnyNoise.subscribe.ManageUnnamedEventsActivity;
 import com.google.firebase.messaging.FirebaseMessagingService;
 import com.google.firebase.messaging.RemoteMessage;
 
@@ -44,10 +46,20 @@ public class AnyNoiseMessagingService extends FirebaseMessagingService {
             title = getString(R.string.notification_channel_alerts_name);
         }
 
-        Intent openApp = new Intent(this, MainActivity.class);
-        PendingIntent pendingIntent = PendingIntent.getActivity(
-                this, 0, openApp,
-                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+        String eventId = remoteMessage.getData().get("eventId");
+        PendingIntent pendingIntent;
+        if (eventId != null) {
+            Intent openEvent = new Intent(this, ManageUnnamedEventsActivity.class);
+            openEvent.putExtra(ManageUnnamedEventsActivity.EXTRA_EVENT_ID, eventId);
+            pendingIntent = TaskStackBuilder.create(this)
+                    .addNextIntentWithParentStack(openEvent)
+                    .getPendingIntent(0, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+        } else {
+            Intent openApp = new Intent(this, MainActivity.class);
+            pendingIntent = PendingIntent.getActivity(
+                    this, 0, openApp,
+                    PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+        }
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this, NotificationHelper.CHANNEL_ALERTS)
                 .setContentTitle(title)
