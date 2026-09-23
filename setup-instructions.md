@@ -168,6 +168,15 @@ echo 'SHEETS_WEBHOOK_URL=' > functions/.env
 Leave it empty to skip Sheets logging (see `appsscript/SETUP.md` if you want
 it later).
 
+If `functions/.env` is missing or doesn't cover a param, `firebase deploy`
+prompts for it interactively (`? Enter a string value for
+SHEETS_WEBHOOK_URL:`) and then writes the resolved value to a new,
+project-specific file, `functions/.env.<project-id>` (e.g.
+`functions/.env.all-anynoise`) — **not** back into `functions/.env`. That
+file is covered by the `.env.*` line in `.gitignore`, but double-check it
+didn't get force-added if you ever `git add -A` in `functions/`, since it
+contains a live secret value.
+
 `firebase.json` needs a `storage` block pointing at `storage.rules` — this
 was missing in the original checked-in file and had to be added:
 
@@ -218,6 +227,37 @@ Verify the function is live:
 ```
 firebase functions:list
 ```
+
+**Deploy killed with no error on a corporate-managed Mac?** If `firebase
+deploy` (or even bare `node --version`-adjacent CLI calls) just prints
+`Killed` and exits, check for a Gatekeeper code-signing rejection before
+assuming it's an OOM or Node-version problem:
+
+```
+ls -t ~/Library/Logs/DiagnosticReports/node-*.ips | head -1 | xargs grep -o '"signal":"[^"]*"\|"namespace":"[^"]*"'
+spctl -a -vv "$(which node)"
+```
+
+If that shows `SIGKILL (Code Signature Invalid)` / `"namespace":"CODESIGNING"`
+and `spctl` says `rejected`, Gatekeeper on this machine (commonly under an
+MDM/endpoint-security policy on a company-managed Mac) is refusing to run
+the ad-hoc-signed Homebrew `node` binary that `firebase-tools` shells out
+to — this is unrelated to `functions/package.json`'s pinned Node version
+and reinstalling/downgrading Node won't fix it. Two ways around it:
+
+- Ask IT to allowlist the Homebrew `node`/`firebase` binaries for this Mac.
+- Deploy from **Google Cloud Shell** instead (unaffected by local Gatekeeper
+  policy) — console.cloud.google.com → select the project → Cloud Shell
+  icon (`>_`) top-right:
+  ```
+  git clone https://github.com/landenlabs/all-AnyNoise.git
+  cd all-AnyNoise/functions && npm install && cd ..
+  firebase login   # first time only; follow the browser auth flow it opens
+  firebase deploy --only functions
+  ```
+  `functions/.env` isn't checked into git, so expect the interactive
+  `SHEETS_WEBHOOK_URL` prompt described above the first time you deploy
+  from a fresh clone.
 
 ## 7. Google Sheets logging (optional)
 
